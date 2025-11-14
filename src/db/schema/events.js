@@ -1,4 +1,4 @@
-import {pgTable, uuid, text, varchar, timestamp} from 'drizzle-orm/pg-core';
+import {pgTable, uuid, text, varchar, timestamp, integer} from 'drizzle-orm/pg-core';
 import { users } from './users.js';
 import { eventCategories, eventSizes, eventModes, eventSponsorTypes} from './masterTable.js';
 
@@ -13,10 +13,10 @@ export const events = pgTable('events', {
   proposal_url: text('proposal_url'),
   start_time: timestamp('start_time'),
   end_time: timestamp('end_time'),
-  category_id: uuid('category_id').references(() => eventCategories.id),
-  sponsor_type_id: uuid('sponsor_type_id').references(() => eventSponsorTypes.id),
-  size_id: uuid('size_id').references(() => eventSizes.id),
-  mode_id: uuid('mode_id').references(() => eventModes.id),
+  category_id: integer('category_id').references(() => eventCategories.id),
+  sponsor_type_id: integer('sponsor_type_id').references(() => eventSponsorTypes.id),
+  size_id: integer('size_id').references(() => eventSizes.id),
+  mode_id: integer('mode_id').references(() => eventModes.id),
   created_at: timestamp('created_at').defaultNow(),
   updated_at: timestamp('updated_at').defaultNow(),
 });

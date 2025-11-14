@@ -9,10 +9,10 @@ CREATE TABLE "events" (
 	"proposal_url" text,
 	"start_time" timestamp,
 	"end_time" timestamp,
-	"category_id" uuid,
-	"sponsor_type_id" uuid,
-	"size_id" uuid,
-	"mode_id" uuid,
+	"category_id" integer,
+	"sponsor_type_id" integer,
+	"size_id" integer,
+	"mode_id" integer,
 	"created_at" timestamp DEFAULT now(),
 	"updated_at" timestamp DEFAULT now()
 );
@@ -25,9 +25,9 @@ CREATE TABLE "users" (
 	"phone" varchar(50) NOT NULL,
 	"password" varchar(255) NOT NULL,
 	"google_id" text,
-	"sponsor_category_id" uuid,
-	"sponsor_type_id" uuid,
-	"sponsor_scope_id" uuid,
+	"sponsor_category_id" integer,
+	"sponsor_type_id" integer,
+	"sponsor_scope_id" integer,
 	"budget_min" numeric,
 	"budget_max" numeric,
 	"sponsor_status" varchar(50),
@@ -59,37 +59,37 @@ CREATE TABLE "payments" (
 );
 --> statement-breakpoint
 CREATE TABLE "event_categories" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" integer PRIMARY KEY NOT NULL,
 	"name" varchar(255) NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "event_modes" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" integer PRIMARY KEY NOT NULL,
 	"name" varchar(255) NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "event_sizes" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" integer PRIMARY KEY NOT NULL,
 	"name" varchar(255) NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "event_sponsor_types" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" integer PRIMARY KEY NOT NULL,
 	"name" varchar(255) NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "sponsor_categories" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" integer PRIMARY KEY NOT NULL,
 	"name" varchar(255) NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "sponsor_scopes" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" integer PRIMARY KEY NOT NULL,
 	"name" varchar(255) NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "sponsor_types" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" integer PRIMARY KEY NOT NULL,
 	"name" varchar(255) NOT NULL
 );
 --> statement-breakpoint
