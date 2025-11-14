@@ -5,7 +5,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const client = postgres(process.env.SUPABASE_URL, {
+const client = postgres(process.env.SUPABASE_DB_URL, {
     ssl: 'require',
 });
 

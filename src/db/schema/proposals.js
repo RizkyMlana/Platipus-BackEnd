@@ -1,10 +1,13 @@
 import { pgTable, uuid, varchar, timestamp } from "drizzle-orm/pg-core";
-import { events } from "./event.js";
+import { events } from "./events.js";
+import { users } from "./users.js";
 
-export const proposals = pgTable("proposals", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  eventId: uuid("event_id").references(() => events.id, { onDelete: "cascade" }),
-  type: varchar("type", { length: 100 }),
-  status: varchar("status", { length: 50 }),
-  createdAt: timestamp("created_at").defaultNow(),
+export const proposals = pgTable('proposals', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  type: varchar('type', { length: 50 }), 
+  status: varchar('status', { length: 50 }).default('Pending'),
+  event_id: uuid('event_id').references(() => events.id).notNull(),
+  sponsor_id: uuid('sponsor_id').references(() => users.id).notNull(),
+  created_at: timestamp('created_at').defaultNow(),
+  updated_at: timestamp('updated_at').defaultNow(),
 });

@@ -1,20 +1,22 @@
 import {pgTable, uuid, text, varchar, timestamp} from 'drizzle-orm/pg-core';
 import { users } from './users.js';
+import { eventCategories, eventSizes, eventModes, eventSponsorTypes} from './masterTable.js';
 
 export const events = pgTable('events', {
-    id: uuid('id').defaultRandom().primaryKey(),
-    userId: uuid('user_id').notNull().references(() => users.id, {onDelete: 'cascade'}),
-    name: varchar('name', {length: 150}),
-    category: varchar('category', {length: 100}),
-    location: varchar('location', {length: 255}),
-    sponsorType: varchar("sponsor_type", { length: 100 }),
-    target: varchar("target", { length: 100 }),
-    eventSize: varchar("event_size", { length: 50 }),
-    eventMode: varchar("event_mode", { length: 50 }),
-    requirements: text('requirements'),
-    desc: text("desc"),
-    proposalUrl: text("proposal_url"),
-    startTime: timestamp("start_time"),
-    endTime: timestamp("end_time"),
-    createdAt: timestamp("created_at").defaultNow(),
-})
+  id: uuid('id').primaryKey().defaultRandom(),
+  eo_id: uuid('eo_id').references(() => users.id).notNull(),
+  name: varchar('name', { length: 255 }).notNull(),
+  location: varchar('location', { length: 255 }),
+  target: varchar('target', { length: 255 }),
+  requirements: text('requirements'),
+  description: text('description'),
+  proposal_url: text('proposal_url'),
+  start_time: timestamp('start_time'),
+  end_time: timestamp('end_time'),
+  category_id: uuid('category_id').references(() => eventCategories.id),
+  sponsor_type_id: uuid('sponsor_type_id').references(() => eventSponsorTypes.id),
+  size_id: uuid('size_id').references(() => eventSizes.id),
+  mode_id: uuid('mode_id').references(() => eventModes.id),
+  created_at: timestamp('created_at').defaultNow(),
+  updated_at: timestamp('updated_at').defaultNow(),
+});
