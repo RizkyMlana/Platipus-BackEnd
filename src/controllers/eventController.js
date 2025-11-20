@@ -141,15 +141,14 @@ export const deleteEvent = async (req, res) => {
 };
 export const getAllEvent = async (req, res) => {
     try{
-        const eoId = req.user.id;
-
         const allEvents = await db
             .select()
             .from(events)
-            .where(eq(events.eo_id, eoId))
             .orderBy(events.created_at);
         
-        res.json({events: allEvents});
+        res.json({
+            message: 'Success',
+            events: allEvents});
     }
     catch (err){
         console.error(err);
@@ -161,14 +160,14 @@ export const getMyEvents = async (req, res) => {
     try {
         const eoId = req.user.id;
         
-        const events = await db
+        const myEvents = await db
             .select()
             .from(events)
             .where(eq(events.eo_id, eoId));
         
         res.json({ 
             message: 'Success',
-            data: events,
+            data: myEvents,
         });
     }catch (err) {
         console.error(err);

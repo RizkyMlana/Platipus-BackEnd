@@ -1,11 +1,12 @@
 import { Router } from 'express';
 import authRoutes from './authRoutes.js';
 import eventRoutes from './eventRoutes.js';
-import userRoutes from './userRoutes.js';
+import profileRoutes from './profileRoutes.js';
 
 const router = Router();
 
 router.use('/', authRoutes);
-router.use('/profile', eventRoutes, userRoutes);
+router.use('/events', eventRoutes);
+router.use('/profile', profileRoutes);
 
 export default router;
