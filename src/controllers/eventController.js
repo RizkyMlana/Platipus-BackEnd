@@ -112,23 +112,7 @@ export const updateEvent = async (req, res) => {
     }
 };
 
-export const getAllEvent = async (req, res) => {
-    try{
-        const eoId = req.user.id;
 
-        const allEvents = await db
-            .select()
-            .from(events)
-            .where(eq(events.eo_id, eoId))
-            .orderBy(events.created_at);
-        
-        res.json({events: allEvents});
-    }
-    catch (err){
-        console.error(err);
-        res.status(500).json({ message: err.message });
-    }
-}
 
 export const deleteEvent = async (req, res) => {
     try {
@@ -155,3 +139,40 @@ export const deleteEvent = async (req, res) => {
         res.status(500).json({message: err.message});
     }
 };
+export const getAllEvent = async (req, res) => {
+    try{
+        const eoId = req.user.id;
+
+        const allEvents = await db
+            .select()
+            .from(events)
+            .where(eq(events.eo_id, eoId))
+            .orderBy(events.created_at);
+        
+        res.json({events: allEvents});
+    }
+    catch (err){
+        console.error(err);
+        res.status(500).json({ message: err.message });
+    }
+};
+
+export const getMyEvents = async (req, res) => {
+    try {
+        const eoId = req.user.id;
+        
+        const events = await db
+            .select()
+            .from(events)
+            .where(eq(events.eo_id, eoId));
+        
+        res.json({ 
+            message: 'Success',
+            data: events,
+        });
+    }catch (err) {
+        console.error(err);
+        res.status(500).json({ message: err.message });
+    }
+
+}

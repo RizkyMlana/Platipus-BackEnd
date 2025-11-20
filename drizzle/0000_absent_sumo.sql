@@ -42,6 +42,7 @@ CREATE TABLE "proposals" (
 	"status" varchar(50) DEFAULT 'Pending',
 	"event_id" uuid NOT NULL,
 	"sponsor_id" uuid NOT NULL,
+	"feedback" text,
 	"created_at" timestamp DEFAULT now(),
 	"updated_at" timestamp DEFAULT now()
 );
