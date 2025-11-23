@@ -2,6 +2,7 @@ import { events } from '../db/schema/events.js';
 import { db } from '../db/index.js';
 import { validateEventTimes, parseDateISO } from '../utils/dateValidator.js';
 import { eq, and} from 'drizzle-orm';
+import { eventCategories, eventModes, eventSizes, eventSponsorTypes } from '../db/schema/masterTable.js';
 
 export const createEvent = async (req, res) => {
     try{
@@ -175,3 +176,41 @@ export const getMyEvents = async (req, res) => {
     }
 
 }
+export const getDetailEvent = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const [event] = await db
+      .select({
+        id: events.id,
+        name: events.name,
+        location: events.location,
+        target: events.target,
+        requirements: events.requirements,
+        description: events.description,
+        proposal_url: events.proposal_url,
+        start_time: events.start_time,
+        end_time: events.end_time,
+        category: eventCategories.name,
+        sponsorType: eventSponsorTypes.name,
+        size: eventSizes.name,
+        mode: eventModes.name,
+      })
+      .from(events)
+      .leftJoin(eventCategories, eq(events.category_id, eventCategories.id))
+      .leftJoin(eventSponsorTypes, eq(events.sponsor_type_id, eventSponsorTypes.id))
+      .leftJoin(eventSizes, eq(events.size_id, eventSizes.id))
+      .leftJoin(eventModes, eq(events.mode_id, eventModes.id))
+      .where(eq(events.id, id));
+
+    if (!event) {
+      return res.status(404).json({ message: 'Event not found' });
+    }
+
+    res.json({ event });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: err.message });
+  }
+};
