@@ -17,10 +17,10 @@ export const createEvent = async (req, res) => {
         const newEvent = {
             eo_id: eoId,
             name,
-            location,
-            target,
-            requirements,
-            description,
+            location: location || null,
+            target: target || null,
+            requirements: requirements || null,
+            description: description || null,
             proposal_url: proposalUrl,
             start_time: new Date(startTime),
             end_time: new Date(endTime),
@@ -72,7 +72,7 @@ export const updateEvent = async (req, res) => {
         const editEvent = {};
 
         if (name !== undefined) editEvent.name = name;
-        if (location !== undefined) editEvent.location = location;
+        if (location !== undefined) editEvent.location = location || null;
         if (target !== undefined) editEvent.target = target;
         if (requirements !== undefined) editEvent.requirements = requirements;
         if (description !== undefined) editEvent.description = description;

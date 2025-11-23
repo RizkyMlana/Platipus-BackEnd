@@ -6,7 +6,7 @@ import sponsorRoutes from './sponsorRoutes.js';
 
 const router = Router();
 
-router.use('/', authRoutes);
+router.use('/auth', authRoutes);
 router.use('/events', eventRoutes);
 router.use('/profile', profileRoutes);
 router.use('/sponsor', sponsorRoutes);

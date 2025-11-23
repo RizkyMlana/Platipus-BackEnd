@@ -7,4 +7,7 @@ export const hashPassword = async (plain) => {
     return bcrypt.hash(plain, salt);
 }
 
-export const comparePassword = (plain, hash) => bcrypt.compare(plain, hash);
+export const comparePassword = async (plain, hash) => {
+    if (!plain || !hash) throw new Error("Missing data or hash for comparison")
+    return bcrypt.compare(plain, hash);
+}

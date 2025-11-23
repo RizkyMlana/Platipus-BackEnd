@@ -1,6 +1,5 @@
-// controllers/authController.js
 import { db } from '../db/index.js';
-import { users } from '../db/schema/users.js';
+import { eoProfiles, sponsorProfiles, users } from '../db/schema/users.js';
 import { eq } from 'drizzle-orm';
 import { hashPassword, comparePassword } from '../utils/hash.js';
 import { generateToken } from '../utils/jwt.js';
@@ -12,7 +11,7 @@ const JWT_EXPIRES = process.env.JWT_EXPIRES || '7d';
 
 export const registerUser = async (req, res) => {
   try {
-    const { name, email, role, phone, password, confirm_password} = req.body;
+    const { name, email, role, phone, password, confirm_password, organization_name, company_name} = req.body;
     if (!name) return res.status(400).json({ message: 'Name Required' });
     if (!email) return res.status(400).json({ message: 'Email Required' });
     if (!role) return res.status(400).json({ message: 'Role Required' });
@@ -38,7 +37,19 @@ export const registerUser = async (req, res) => {
       phone,
     }).returning();
 
-    const token = generateToken({ id: created.id, email: created.email, role: created.role }, { expiresIn: JWT_EXPIRES });
+    if (role == "EO" || role == "Eo" || role == "eo"){
+      await db.insert(eoProfiles).values({
+        user_id : created.id,
+        organization_name: organization_name || created.name,
+      })
+    }
+    if (role == "SPONSOR" || role == "Sponsor" || role == "sponsor"){
+      await db.insert(sponsorProfiles).values({
+        user_id: created.id,
+        company_name: company_name || created.name,
+      })
+    }
+    const token = generateToken({ id: created.id, email: created.email, role: created.role}, { expiresIn: JWT_EXPIRES });
     res.status(201).json({ user: created, token });
   } catch (err) {
     console.error(err);
@@ -49,19 +60,46 @@ export const registerUser = async (req, res) => {
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password required' })
+    }
 
-    const found = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    const found = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
     const user = found[0];
-    if (!user) return res.status(401).json({ message: 'Invalid credentials' });
+      
+    if (!user) { 
+      return res.status(401).json({ message: 'Invalid credentials' })
+    }
 
-    if (!user.password) return res.status(400).json({ message: 'User registered via Google. Use Google login.' });
+    if (!user.password) {
+      return res.status(400).json({ message: 'User registered via Google. Use Google login.' })
+    }
 
     const match = await comparePassword(password, user.password);
-    if (!match) return res.status(401).json({ message: 'Invalid credentials' });
+    if (!match) {
+      return res.status(401).json({ message: 'Invalid credentials' })
+    }
 
-    const token = generateToken({ id: user.id, email: user.email, role: user.role }, { expiresIn: JWT_EXPIRES });
-    const safeUser = { ...user, password: undefined };
+    const token = generateToken(
+      { 
+        id: user.id, 
+        email: user.email,
+        role: user.role 
+      },
+      { expiresIn: JWT_EXPIRES }
+    );
+    const safeUser = {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      profile_picture: user.profile_picture_url,
+      created_at : user.createdAt
+    }
     res.json({ user: safeUser, token });
   } catch (err) {
     console.error(err);
