@@ -3,7 +3,6 @@ import { eoProfiles, sponsorProfiles, users } from '../db/schema/users.js';
 import { eq } from 'drizzle-orm';
 import { hashPassword, comparePassword } from '../utils/hash.js';
 import { generateToken } from '../utils/jwt.js';
-// import { googleClient } from '../config/googleAuth.js'; config file should export googleClient
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -74,11 +73,6 @@ export const loginUser = async (req, res) => {
     if (!user) { 
       return res.status(401).json({ message: 'Invalid credentials' })
     }
-
-    if (!user.password) {
-      return res.status(400).json({ message: 'User registered via Google. Use Google login.' })
-    }
-
     const match = await comparePassword(password, user.password);
     if (!match) {
       return res.status(401).json({ message: 'Invalid credentials' })
@@ -106,48 +100,3 @@ export const loginUser = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
-// export const loginWithGoogle = async (req, res) => {
-//   try {
-//     const { id_token } = req.body;
-//     if (!id_token) return res.status(400).json({ message: 'id_token is required' });
-
-//     const ticket = await googleClient.verifyIdToken({
-//       idToken: id_token,
-//       audience: process.env.GOOGLE_CLIENT_ID
-//     });
-
-//     const payload = ticket.getPayload();
-//     const email = payload.email;
-//     const name = payload.name;
-//     const googleId = payload.sub;
-//     const picture = payload.picture ?? null;
-
-//     let found = await db.select().from(users).where(eq(users.email, email)).limit(1);
-//     let user = found[0];
-
-//     if (!user) {
-//       const [created] = await db.insert(users).values({
-//         name,
-//         email,
-//         google_id: googleId,
-//         password: null,
-//         role: 'user'
-//       }).returning();
-//       user = created;
-//     } else if (!user.google_id) {
-//       await db.update(users).set({ google_id: googleId }).where(eq(users.id, user.id));
-//       const [updated] = await db.select().from(users).where(eq(users.id, user.id)).limit(1);
-//       user = updated;
-//     }
-
-//     const token = generateToken({ id: user.id, email: user.email, role: user.role }, { expiresIn: JWT_EXPIRES });
-//     const safeUser = { ...user, password: undefined };
-//     res.json({ user: safeUser, token });
-//   } catch (err) {
-//     console.error('Google login error:', err);
-//     res.status(500).json({ message: err.message });
-//   }
-// };
-
-

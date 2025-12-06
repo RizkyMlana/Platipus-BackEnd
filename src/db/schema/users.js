@@ -8,7 +8,6 @@ export const users = pgTable('users', {
   phone: varchar('phone', { length: 50 }).notNull(),
   password: varchar('password', { length: 255 }).notNull(),
   profile_picture_url: text('profile_picture_url'),
-  google_id: text('google_id'),
   created_at: timestamp('created_at').defaultNow(),
   updated_at: timestamp('updated_at').defaultNow(),
 });
