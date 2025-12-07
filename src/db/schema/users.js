@@ -13,10 +13,7 @@ export const users = pgTable('users', {
 });
 export const eoProfiles = pgTable('eo_profiles', {
   id: uuid('id').primaryKey().defaultRandom(),
-  user_id: uuid('user_id')
-    .references(() => users.id)
-    .notNull()
-    .unique(),
+  user_id: uuid('user_id').references(() => users.id).notNull().unique(),
   organization_name: varchar('organization_name', { length: 255 }).notNull(),
   organization_address: varchar('organization_address', { length: 255 }),
   website: varchar('website', { length: 255 }),
@@ -25,10 +22,7 @@ export const eoProfiles = pgTable('eo_profiles', {
 });
 export const sponsorProfiles = pgTable('sponsor_profiles', {
   id: uuid('id').primaryKey().defaultRandom(),
-  user_id: uuid('user_id')
-    .references(() => users.id)
-    .notNull()
-    .unique(),
+  user_id: uuid('user_id').references(() => users.id).notNull().unique(),
   company_name: varchar('company_name', { length: 255 }).notNull(),
   company_address: varchar('company_address', { length: 255 }),
   industry: varchar('industry', { length: 255 }),
