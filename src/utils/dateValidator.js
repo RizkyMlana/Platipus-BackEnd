@@ -10,8 +10,3 @@ export const validateEventTimes = (startTime, endTime) => {
 
   return { valid: true };
 };
-export const parseDateISO = (value) => {
-  if(!value) return null;
-  const d = new Date(value);
-  return isNaN(d.getTime()) ? null : d;
-};

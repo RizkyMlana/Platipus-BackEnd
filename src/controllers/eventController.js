@@ -1,6 +1,6 @@
 import { events } from '../db/schema/events.js';
 import { db } from '../db/index.js';
-import { validateEventTimes, parseDateISO } from '../utils/dateValidator.js';
+import { validateEventTimes } from '../utils/dateValidator.js';
 import { eq, and} from 'drizzle-orm';
 import { eventCategories, eventModes, eventSizes, eventSponsorTypes } from '../db/schema/masterTable.js';
 
@@ -45,98 +45,106 @@ export const createEvent = async (req, res) => {
     
 };
 export const updateEvent = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const eoId = req.user.id;
+  try {
+    const { id } = req.params;
+    const eoId = req.user.id;
 
-        const [existing] = await db
-            .select()
-            .from(events)
-            .where(and(eq(events.id, id), eq(events.eo_id, eoId)));
-        if (!existing) {
-            return res.status(404).json({ message: "Event Not Found" });
-        }
-        const {
-            name,
-            location,
-            target,
-            requirements,
-            description,
-            proposalUrl,
-            startTime,
-            endTime,
-            categoryId,
-            sponsorTypeId,
-            sizeId,
-            modeId
-        } = req.body;
+    // Debug: cek params
+    console.log("Update Event - params id:", id, "eoId:", eoId);
 
+    const [existing] = await db
+      .select()
+      .from(events)
+      .where(and(eq(events.id, id), eq(events.eo_id, eoId)));
 
-        const editEvent = {};
+    console.log("Existing event:", existing);
 
-        if (name !== undefined) editEvent.name = name;
-        if (location !== undefined) editEvent.location = location || null;
-        if (target !== undefined) editEvent.target = target || null;
-        if (requirements !== undefined) editEvent.requirements = requirements || null;
-        if (description !== undefined) editEvent.description = description || null;
-        if (proposalUrl !== undefined) editEvent.proposal_url = proposalUrl || null;
-
-        if (startTime !== undefined || endTime !== undefined) {
-            const newStart = startTime ? new Date(startTime) : existing.start_time;
-            const newEnd = endTime ? new Date(endTime) : existing.end_time;
-
-            const timeValidation = validateEventTimes(newStart, newEnd);
-
-            if (!timeValidation.valid) {
-                return res.status(400).json({ message: timeValidation.message });
-            }
-
-            editEvent.start_time = newStart;
-            editEvent.end_time = newEnd;
-        }
-
-        if (categoryId !== undefined) editEvent.category_id = Number(categoryId);
-        if (sponsorTypeId !== undefined)editEvent.sponsor_type_id = Number(sponsorTypeId);
-        if (sizeId !== undefined) editEvent.size_id = Number(sizeId);
-        if (modeId !== undefined) editEvent.mode_id = Number(modeId);
-
-        editEvent.updated_at = new Date();
-
-        const [updated] = await db
-            .update(events)
-            .set(editEvent)
-            .where(and(eq(events.id, id), eq(events.eo_id, eoId)))
-            .returning();
-
-        res.json({ message: "Event Updated", event: updated });
-    }catch (err) {
-        console.error(err);
-        res.status(500).json({ message: err.message });
+    if (!existing) {
+      return res.status(404).json({ 
+        message: "Event Not Found. Either wrong id or you are not the owner." 
+      });
     }
+
+    const {
+      name, location, target, requirements, description, proposalUrl,
+      startTime, endTime, categoryId, sponsorTypeId, sizeId, modeId
+    } = req.body;
+
+    const editEvent = {};
+
+    if (name !== undefined) editEvent.name = name;
+    if (location !== undefined) editEvent.location = location || null;
+    if (target !== undefined) editEvent.target = target || null;
+    if (requirements !== undefined) editEvent.requirements = requirements || null;
+    if (description !== undefined) editEvent.description = description || null;
+    if (proposalUrl !== undefined) editEvent.proposal_url = proposalUrl || null;
+
+    if (startTime !== undefined || endTime !== undefined) {
+      const newStart = startTime ? new Date(startTime) : existing.start_time;
+      const newEnd = endTime ? new Date(endTime) : existing.end_time;
+
+      const timeValidation = validateEventTimes(newStart, newEnd);
+      if (!timeValidation.valid) {
+        return res.status(400).json({ message: timeValidation.message });
+      }
+
+      editEvent.start_time = newStart;
+      editEvent.end_time = newEnd;
+    }
+
+    if (categoryId !== undefined) editEvent.category_id = Number(categoryId);
+    if (sponsorTypeId !== undefined) editEvent.sponsor_type_id = Number(sponsorTypeId);
+    if (sizeId !== undefined) editEvent.size_id = Number(sizeId);
+    if (modeId !== undefined) editEvent.mode_id = Number(modeId);
+
+    editEvent.updated_at = new Date();
+
+    const [updated] = await db
+      .update(events)
+      .set(editEvent)
+      .where(and(eq(events.id, id), eq(events.eo_id, eoId)))
+      .returning();
+
+    res.json({ message: "Event Updated", event: updated });
+
+  } catch (err) {
+    console.error("updateEvent error:", err);
+    res.status(500).json({ message: err.message });
+  }
 };
+
+
 export const deleteEvent = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const eoId = req.user.id;
+  try {
+    const { id } = req.params;
+    const eoId = req.user.id;
 
-        const [existing] = await db
-            .select()
-            .from(events)
-            .where(and(eq(events.id, id), eq(events.eo_id,eoId)));
+    console.log("Delete Event - params id:", id, "eoId:", eoId);
 
-        if(!existing){
-            return res.status(404).json({message: 'Event not Found'});
-        }
+    const [existing] = await db
+      .select()
+      .from(events)
+      .where(and(eq(events.id, id), eq(events.eo_id, eoId)));
 
-        await db.delete(events).where(eq(events.id, id));
+    console.log("Existing event to delete:", existing);
 
-        res.json({message: "Event deleted sucessfully"});
+    if (!existing) {
+      return res.status(404).json({ 
+        message: 'Event Not Found. Either wrong id or you are not the owner.'
+      });
     }
-    catch(err){
-        console.error(err);
-        res.status(500).json({message: err.message});
-    }
+
+    await db.delete(events)
+      .where(and(eq(events.id, id), eq(events.eo_id, eoId)));
+
+    res.json({ message: "Event deleted successfully" });
+
+  } catch (err) {
+    console.error("deleteEvent error:", err);
+    res.status(500).json({ message: err.message });
+  }
 };
+
 export const getAllEvent = async (req, res) => {
     try{
         const allEvents = await db
