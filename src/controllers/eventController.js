@@ -195,7 +195,7 @@ export const getMyEvents = async (req, res) => {
 };
 export const getDetailEvent = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { eventId: id } = req.params;
 
     const [event] = await db
       .select({
