@@ -43,8 +43,7 @@ export const createEvent = async (req, res) => {
         res.status(500).json({message: err.message});
     }
     
-}
-
+};
 export const updateEvent = async (req, res) => {
     try {
         const { id } = req.params;
@@ -115,9 +114,6 @@ export const updateEvent = async (req, res) => {
         res.status(500).json({ message: err.message });
     }
 };
-
-
-
 export const deleteEvent = async (req, res) => {
     try {
         const { id } = req.params;
@@ -170,7 +166,6 @@ export const getAllEvent = async (req, res) => {
         res.status(500).json({ message: err.message });
     }
 };
-
 export const getMyEvents = async (req, res) => {
     try {
         const eoId = req.user.id;
@@ -189,7 +184,7 @@ export const getMyEvents = async (req, res) => {
         res.status(500).json({ message: err.message });
     }
 
-}
+};
 export const getDetailEvent = async (req, res) => {
   try {
     const { id } = req.params;

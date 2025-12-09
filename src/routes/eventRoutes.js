@@ -1,14 +1,16 @@
 import { Router } from 'express';
-import { createEvent, updateEvent, getAllEvent, deleteEvent, getDetailEvent } from '../controllers/eventController.js';
+import { createEvent, updateEvent, getAllEvent, deleteEvent, getDetailEvent, getMyEvents } from '../controllers/eventController.js';
 import { authMiddleware } from '../middlewares/authMiddleware.js';
-import {roleMiddleware} from '../middlewares/roleMiddleware.js';
+import { roleMiddleware } from '../middlewares/roleMiddleware.js';
 
 const router = Router();
 
-router.post('/create', authMiddleware, roleMiddleware('EO'), createEvent );
-router.put('/:id', authMiddleware, roleMiddleware('EO'), updateEvent);
-router.delete('/:id', authMiddleware, roleMiddleware('EO'),deleteEvent);
-router.get('/', authMiddleware, getAllEvent);
-router.get('/:id', authMiddleware, getDetailEvent);
+router.post('/', authMiddleware, createEvent, roleMiddleware('EO'));
+router.put('/:eventId', authMiddleware, roleMiddleware('EO'),updateEvent);
+router.delete('/:eventId', authMiddleware, roleMiddleware('EO'),deleteEvent);
+router.get('/me', authMiddleware, roleMiddleware('EO'), getMyEvents);
+
+router.get('/', getAllEvent);
+router.get('/:eventId', getDetailEvent);
 
 export default router;

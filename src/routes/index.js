@@ -4,6 +4,7 @@ import eventRoutes from './eventRoutes.js';
 import profileRoutes from './profileRoutes.js';
 import sponsorRoutes from './sponsorRoutes.js';
 import proposalRoutes from './proposalRoutes.js';
+import paymentRoutes from './paymentRoutes.js';
 
 const router = Router();
 
@@ -12,5 +13,6 @@ router.use('/events', eventRoutes);
 router.use('/profile', profileRoutes);
 router.use('/sponsor', sponsorRoutes);
 router.use('/proposal', proposalRoutes);
+router.use('/payments', paymentRoutes);
 
 export default router;
