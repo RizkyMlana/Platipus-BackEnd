@@ -1,10 +1,10 @@
 import { Router } from 'express';
-import { getEventDetail } from '../controllers/sponsorController.js';
+import { getDetailEvent } from "../controllers/eventController.js"
 import { authMiddleware } from '../middlewares/authMiddleware.js';
 import { roleMiddleware } from '../middlewares/roleMiddleware.js';
 
 const router = Router();
 
-router.get('/events/:id', authMiddleware, roleMiddleware('SPONSOR'), getEventDetail);
+router.get('/events/:id', authMiddleware, roleMiddleware('SPONSOR'), getDetailEvent);
 
 export default router; 
