@@ -46,7 +46,7 @@ export const createEvent = async (req, res) => {
 };
 export const updateEvent = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { eventId: id } = req.params;
     const eoId = req.user.id;
 
     // Debug: cek params
@@ -116,7 +116,7 @@ export const updateEvent = async (req, res) => {
 
 export const deleteEvent = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { eventId: id } = req.params;
     const eoId = req.user.id;
 
     console.log("Delete Event - params id:", id, "eoId:", eoId);
