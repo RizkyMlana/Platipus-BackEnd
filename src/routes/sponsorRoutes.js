@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middlewares/authMiddleware.js';
 import { roleMiddleware } from '../middlewares/roleMiddleware.js';
-import { getIncomingProposals, getProposalDetail, getRecommendedEvents, getSponsorProfile} from '../controllers/sponsorController.js';
+import { getIncomingProposals, getProposalDetail, getRecommendedEvents, getSponsorProfile, updateProposalStatus} from '../controllers/sponsorController.js';
 
 const router = Router();
 

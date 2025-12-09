@@ -1,5 +1,4 @@
 import midtransClient from 'midtrans-client';
-import { supa } from '../config/db.js';
 import { eq, and, desc, sql } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { events } from '../db/schema/events.js';

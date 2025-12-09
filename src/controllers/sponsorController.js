@@ -1,11 +1,8 @@
 import { and, eq, gte, lte, desc } from "drizzle-orm";
 import { db } from "../db/index.js";
-import { 
-    sponsorProfiles, 
-    proposalSponsors, 
-    proposals, 
-    events 
-} from "../db/schema.js";
+import { sponsorProfiles } from "../db/schema/users.js";
+import { events } from "../db/schema/events.js";
+import { proposalSponsors, proposals } from "../db/schema/proposals.js";
 
 
 
