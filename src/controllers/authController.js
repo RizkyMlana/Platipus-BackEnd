@@ -10,73 +10,78 @@ const JWT_EXPIRES = process.env.JWT_EXPIRES || '7d';
 
 export const registerUser = async (req, res) => {
   try {
-    let { name, email, role, phone, password, confirm_password, organization_name, company_name} = req.body;
+    let { name, email, role, phone, password, confirm_password, organization_name, company_name } = req.body;
+
+    // Basic validation
     if (!name) return res.status(400).json({ message: 'Name Required' });
     if (!email) return res.status(400).json({ message: 'Email Required' });
     if (!role) return res.status(400).json({ message: 'Role Required' });
     if (!phone) return res.status(400).json({ message: 'Phone Required' });
     if (!password) return res.status(400).json({ message: 'Password Required' });
-    if(!confirm_password) return res.status(400).json({message: 'Confirm Password Required'});
+    if (!confirm_password) return res.status(400).json({ message: 'Confirm Password Required' });
+    if (password !== confirm_password) return res.status(400).json({ message: 'Password do not match' });
 
-
+    // Clean email & role
     email = email.trim().toLowerCase();
     role = role.trim().toLowerCase();
 
-    const validRole = ["EO", "SPONSOR"];
-    if(!validRole.includes(role)){
-      return res.status(400).json({ message: 'Invalid Role'})
-    }
-    if(password !== confirm_password)
-      return res.status(400).json({message: 'Password do not match'});
+    // Validate role
+    const validRoles = ['eo', 'sponsor'];
+    if (!validRoles.includes(role)) return res.status(400).json({ message: 'Invalid Role' });
 
+    // Normalize phone
     phone = phone.replace(/[\s\-]/g, '');
-    if(!/^\+?\d{9,15}$/.test(phone)){
-      return res.status(400).json({ message: 'Invalid phone number'});
-    }
+    if (!/^\+?\d{9,15}$/.test(phone)) return res.status(400).json({ message: 'Invalid phone number' });
 
-    const existing = await db
-      .select()
-      .from(users)
-      .where(eq(users.email, email))
-      .limit(1);
-    
-    if (existing.length) {
-      return res.status(409).json({message: 'Email already registered'});
-    }
+    // Check email uniqueness
+    const existing = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    if (existing.length) return res.status(409).json({ message: 'Email already registered' });
+
+    // Hash password
     const hashed = await hashPassword(password);
 
+    // Transaction: create user + profile
     const createdUser = await db.transaction(async (tx) => {
       const [created] = await tx.insert(users)
         .values({
-          name, role, email, password: hashed, phone
+          name,
+          role: role.toUpperCase(), // Store in uppercase for consistency
+          email,
+          password: hashed,
+          phone
         })
         .returning();
-      if (role == "EO"){
+
+      if (role === 'eo') {
         await tx.insert(eoProfiles).values({
-          user_id : created.id,
-          organization_name: organization_name || created.name,
-        })
+          user_id: created.id,
+          organization_name: organization_name || created.name
+        });
       }
-      if (role == "SPONSOR"){
+
+      if (role === 'sponsor') {
         await tx.insert(sponsorProfiles).values({
           user_id: created.id,
-          company_name: company_name || created.name,
-        })
+          company_name: company_name || created.name
+        });
       }
+
       return created;
     });
+
+    // Generate JWT
     const token = generateToken(
-      {id: createdUser.id, email: createdUser.email, role: createdUser.role},
-      {expiresIn: JWT_EXPIRES}
+      { id: createdUser.id, email: createdUser.email, role: createdUser.role },
+      { expiresIn: JWT_EXPIRES }
     );
 
-    res.status(201).json({ user: createdUser, token});
-
+    res.status(201).json({ user: createdUser, token });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: err.message });
   }
 };
+
 
 export const loginUser = async (req, res) => {
   try {
