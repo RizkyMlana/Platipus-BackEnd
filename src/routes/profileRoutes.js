@@ -9,7 +9,6 @@ const router = Router();
 
 router.get('/',authMiddleware, getProfile);
 router.put('/', authMiddleware, updateProfile);
-
 router.get('/events', authMiddleware, roleMiddleware('EO'), getMyEvents);
 
 export default router;

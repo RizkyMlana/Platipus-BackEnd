@@ -1,4 +1,5 @@
 import {pgTable, varchar, timestamp, text, jsonb, uuid, integer, numeric} from 'drizzle-orm/pg-core';
+import { sponsorCategories, sponsorTypes, sponsorScopes} from './masterTable.js';
 
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),

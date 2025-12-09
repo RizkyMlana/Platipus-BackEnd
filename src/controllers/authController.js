@@ -10,7 +10,7 @@ const JWT_EXPIRES = process.env.JWT_EXPIRES || '7d';
 
 export const registerUser = async (req, res) => {
   try {
-    const { name, email, role, phone, password, confirm_password, organization_name, company_name} = req.body;
+    let { name, email, role, phone, password, confirm_password, organization_name, company_name} = req.body;
     if (!name) return res.status(400).json({ message: 'Name Required' });
     if (!email) return res.status(400).json({ message: 'Email Required' });
     if (!role) return res.status(400).json({ message: 'Role Required' });
@@ -18,38 +18,60 @@ export const registerUser = async (req, res) => {
     if (!password) return res.status(400).json({ message: 'Password Required' });
     if(!confirm_password) return res.status(400).json({message: 'Confirm Password Required'});
 
+
+    email = email.trim().toLowerCase();
+    role = role.trim().toLowerCase();
+
+    const validRole = ["EO", "SPONSOR"];
+    if(!validRole.includes(role)){
+      return res.status(400).json({ message: 'Invalid Role'})
+    }
     if(password !== confirm_password)
       return res.status(400).json({message: 'Password do not match'});
 
-    if(phone && !/^\+?\d{10,15}$/.test(phone))
-      return res.status(400).json({message: 'Invalid phone number'});
+    phone = phone.replace(/[\s\-]/g, '');
+    if(!/^\+?\d{9,15}$/.test(phone)){
+      return res.status(400).json({ message: 'Invalid phone number'});
+    }
 
-    const existing = await db.select().from(users).where(eq(users.email, email)).limit(1);
-    if (existing.length) return res.status(409).json({ message: 'Email already registered' });
-
+    const existing = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
+    
+    if (existing.length) {
+      return res.status(409).json({message: 'Email already registered'});
+    }
     const hashed = await hashPassword(password);
-    const [created] = await db.insert(users).values({
-      name,
-      role,
-      email,
-      password: hashed,
-      phone,
-    }).returning();
 
-    if (role == "EO" || role == "Eo" || role == "eo"){
-      await db.insert(eoProfiles).values({
-        user_id : created.id,
-        organization_name: organization_name || created.name,
-      })
-    }
-    if (role == "SPONSOR" || role == "Sponsor" || role == "sponsor"){
-      await db.insert(sponsorProfiles).values({
-        user_id: created.id,
-        company_name: company_name || created.name,
-      })
-    }
-    const token = generateToken({ id: created.id, email: created.email, role: created.role}, { expiresIn: JWT_EXPIRES });
-    res.status(201).json({ user: created, token });
+    const createdUser = await db.transaction(async (tx) => {
+      const [created] = await tx.insert(users)
+        .values({
+          name, role, email, password: hashed, phone
+        })
+        .returning();
+      if (role == "EO"){
+        await tx.insert(eoProfiles).values({
+          user_id : created.id,
+          organization_name: organization_name || created.name,
+        })
+      }
+      if (role == "SPONSOR"){
+        await tx.insert(sponsorProfiles).values({
+          user_id: created.id,
+          company_name: company_name || created.name,
+        })
+      }
+      return created;
+    });
+    const token = generateToken(
+      {id: createdUser.id, email: createdUser.email, role: createdUser.role},
+      {expiresIn: JWT_EXPIRES}
+    );
+
+    res.status(201).json({ user: createdUser, token});
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: err.message });
@@ -58,16 +80,18 @@ export const registerUser = async (req, res) => {
 
 export const loginUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    let { email, password } = req.body;
     if (!email || !password) {
       return res.status(400).json({ message: 'Email and password required' })
     }
+    email = email.trim().toLowerCase();
 
     const found = await db
       .select()
       .from(users)
       .where(eq(users.email, email))
       .limit(1);
+    
     const user = found[0];
       
     if (!user) { 
@@ -91,8 +115,8 @@ export const loginUser = async (req, res) => {
       email: user.email,
       name: user.name,
       role: user.role,
-      profile_picture: user.profile_picture_url,
-      created_at : user.createdAt
+      profile_picture_url: user.profile_picture_url,
+      created_at : user.created_at
     }
     res.json({ user: safeUser, token });
   } catch (err) {

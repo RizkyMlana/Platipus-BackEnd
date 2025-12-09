@@ -1,6 +1,5 @@
 import { db } from '../db/index.js';
 import { users, eoProfiles, sponsorProfiles} from '../db/schema/users.js';
-import { sponsorCategories, sponsorScopes, sponsorTypes } from '../db/schema/masterTable.js';
 import { eq } from 'drizzle-orm';
 
 export const getProfile = async (req, res) => {
@@ -62,21 +61,18 @@ export const updateProfile = async (req, res) => {
   try {
     const userId = req.user?.id;
     const role = req.user?.role;
+
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
     if (!role) return res.status(400).json({ message: 'User role missing' });
 
-    const {
-      profile_picture_url,
-      ...body
-    } = req.body;
+    const { profile_picture_url, ...body } = req.body;
 
-    const profilePicture = profile_picture_url || avatar_url;
-    if (profilePicture !== undefined) {
-      await db
-        .update(users)
-        .set({ profile_picture_url: profilePicture, updated_at: new Date() })
-        .where(eq(users.id, userId));
-    }
+    await db.update(users)
+      .set({
+        updated_at: new Date(),
+        ...(profile_picture_url !== undefined ? { profile_picture_url } : {})
+      })
+      .where(eq(users.id, userId));
 
     let updated = null;
 
@@ -85,12 +81,16 @@ export const updateProfile = async (req, res) => {
 
       const payload = {};
       allowed.forEach(k => {
-        if (Object.prototype.hasOwnProperty.call(body, k)) {
+        if (body.hasOwnProperty(k)) {
           payload[k] = body[k] === undefined ? null : body[k];
         }
       });
 
-      const found = await db.select().from(eoProfiles).where(eq(eoProfiles.user_id, userId)).limit(1);
+      const found = await db.select()
+        .from(eoProfiles)
+        .where(eq(eoProfiles.user_id, userId))
+        .limit(1);
+
       if (!found.length) {
         const insertObj = {
           user_id: userId,
@@ -100,20 +100,23 @@ export const updateProfile = async (req, res) => {
           created_at: new Date(),
           updated_at: new Date()
         };
+
         const [ins] = await db.insert(eoProfiles).values(insertObj).returning();
         updated = ins;
+
       } else {
-        if (Object.keys(payload).length === 0) {
-          updated = found[0];
-        } else {
-          const [upd] = await db.update(eoProfiles)
-            .set({ ...payload, updated_at: new Date() })
-            .where(eq(eoProfiles.user_id, userId))
-            .returning();
-          updated = upd;
-        }
+        const [upd] = await db.update(eoProfiles)
+          .set({
+            ...payload,
+            updated_at: new Date()
+          })
+          .where(eq(eoProfiles.user_id, userId))
+          .returning();
+
+        updated = upd;
       }
     }
+
 
     else if (role === 'SPONSOR') {
       const allowed = [
@@ -132,12 +135,16 @@ export const updateProfile = async (req, res) => {
 
       const payload = {};
       allowed.forEach(k => {
-        if (Object.prototype.hasOwnProperty.call(body, k)) {
+        if (body.hasOwnProperty(k)) {
           payload[k] = body[k] === undefined ? null : body[k];
         }
       });
 
-      const found = await db.select().from(sponsorProfiles).where(eq(sponsorProfiles.user_id, userId)).limit(1);
+      const found = await db.select()
+        .from(sponsorProfiles)
+        .where(eq(sponsorProfiles.user_id, userId))
+        .limit(1);
+
       if (!found.length) {
         const insertObj = {
           user_id: userId,
@@ -155,19 +162,22 @@ export const updateProfile = async (req, res) => {
           created_at: new Date(),
           updated_at: new Date()
         };
+
         const [ins] = await db.insert(sponsorProfiles).values(insertObj).returning();
         updated = ins;
+
       } else {
-        if (Object.keys(payload).length === 0) {
-          updated = found[0];
-        } else {
-          const [upd] = await db.update(sponsorProfiles)
-            .set({ ...payload, updated_at: new Date() })
-            .where(eq(sponsorProfiles.user_id, userId))
-            .returning();
-          updated = upd;
-        }
+        const [upd] = await db.update(sponsorProfiles)
+          .set({
+            ...payload,
+            updated_at: new Date()
+          })
+          .where(eq(sponsorProfiles.user_id, userId))
+          .returning();
+
+        updated = upd;
       }
+
     } else {
       return res.status(403).json({ message: 'Invalid role' });
     }
@@ -176,6 +186,7 @@ export const updateProfile = async (req, res) => {
       message: 'Profile updated',
       profile: updated
     });
+
   } catch (err) {
     console.error('updateProfile error', err);
     return res.status(500).json({ message: err.message });

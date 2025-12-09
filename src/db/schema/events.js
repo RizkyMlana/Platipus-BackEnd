@@ -1,4 +1,4 @@
-import {pgTable, uuid, text, varchar, timestamp, integer} from 'drizzle-orm/pg-core';
+import {pgTable, uuid, text, varchar, timestamp, integer, boolean} from 'drizzle-orm/pg-core';
 import { users } from './users.js';
 import { eventCategories, eventSizes, eventModes, eventSponsorTypes} from './masterTable.js';
 
@@ -10,7 +10,8 @@ export const events = pgTable('events', {
   target: varchar('target', { length: 255 }),
   requirements: text('requirements'),
   description: text('description'),
-  proposal_url: text('proposal_url'),
+  proposal_url: text('proposal_url'),  // PDF uploaded by EO
+  fast_track: boolean('fast_track').default(false),  // if EO paid
   start_time: timestamp('start_time'),
   end_time: timestamp('end_time'),
   category_id: integer('category_id').references(() => eventCategories.id),
