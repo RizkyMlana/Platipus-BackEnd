@@ -1,6 +1,5 @@
 import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
-import path from "path";
 
 const options = {
   definition: {
@@ -28,14 +27,7 @@ const options = {
       { bearerAuth: [] }
     ],
   },
-  apis: [
-    path.join(process.cwd(), "routes/authRoutes.js"),
-    path.join(process.cwd(), "routes/eventRoutes.js"),
-    path.join(process.cwd(), "routes/paymentRoutes.js"),
-    path.join(process.cwd(), "routes/proposalRoutes.js"),
-    path.join(process.cwd(), "routes/profileRoutes.js"),
-    path.join(process.cwd(), "routes/sponsorRoutes.js"),
-  ],
+  apis: ["./routes/*js"],
 };
 
 const specs = swaggerJsdoc(options);
