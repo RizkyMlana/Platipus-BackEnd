@@ -12,5 +12,6 @@ app.use(express.urlencoded({extended: true}));
 app.use('/api', router);
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
+console.log(JSON.stringify(specs, null, 2));
 
 export default app;
