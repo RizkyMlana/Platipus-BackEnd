@@ -165,7 +165,6 @@ export const feedbackProposal = async (req, res) => {
         const { id } = req.params;
         const { feedback, status } = req.body;
 
-        // Pastikan select dari table proposalSponsors
         const [ps] = await db
             .select()
             .from(proposalSponsors)

@@ -1,6 +1,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import router from './src/routes/index.js';
+import { swaggerUI, specs } from "./swagger.js";
 
 dotenv.config();
 
@@ -10,5 +11,7 @@ app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 
 app.use('/api', router);
+
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
 
 export default app;

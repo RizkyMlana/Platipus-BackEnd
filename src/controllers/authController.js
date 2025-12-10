@@ -8,6 +8,7 @@ dotenv.config();
 
 const JWT_EXPIRES = process.env.JWT_EXPIRES || '7d';
 
+
 export const registerUser = async (req, res) => {
   try {
     let { name, email, role, phone, password, confirm_password, organization_name, company_name } = req.body;
