@@ -124,7 +124,6 @@ export const getProfile = async (req, res) => {
  *               profile_picture_url:
  *                 type: string
  *                 nullable: true
- *               // EO specific
  *               organization_name:
  *                 type: string
  *                 nullable: true
@@ -134,7 +133,6 @@ export const getProfile = async (req, res) => {
  *               organization_address:
  *                 type: string
  *                 nullable: true
- *               // Sponsor specific
  *               company_name:
  *                 type: string
  *                 nullable: true

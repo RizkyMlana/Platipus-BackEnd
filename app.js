@@ -2,7 +2,6 @@ import express from 'express';
 import dotenv from 'dotenv';
 import router from './src/routes/index.js';
 import { swaggerUi, specs } from "./swagger.js";
-console.log(JSON.stringify(specs, null, 2));
 dotenv.config();
 
 const app = express();
