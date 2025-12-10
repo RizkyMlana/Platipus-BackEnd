@@ -1,7 +1,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import router from './src/routes/index.js';
-import { swaggerUI, specs } from "./swagger.js";
+import { swaggerUi, specs } from "./swagger.js";
 
 dotenv.config();
 
