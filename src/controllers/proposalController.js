@@ -165,23 +165,29 @@ export const feedbackProposal = async (req, res) => {
         const { id } = req.params;
         const { feedback, status } = req.body;
 
+        // Pastikan select dari table proposalSponsors
         const [ps] = await db
             .select()
-            .from(proposals)
-            .where(eq(proposals.id, id));
+            .from(proposalSponsors)
+            .where(eq(proposalSponsors.id, id));
 
-            if (!ps || ps.sponsor_id !== sponsorId) {
-                return res.status(403).json({ message: "Unauthorized" });
-            }
+        if (!ps) {
+            return res.status(404).json({ message: "Proposal not found" });
+        }
+
+        if (ps.sponsor_id !== sponsorId) {
+            return res.status(403).json({ message: "Unauthorized" });
+        }
 
         const [updated] = await db
             .update(proposalSponsors)
             .set({feedback, status, updated_at: new Date()})
             .where(eq(proposalSponsors.id, id))
             .returning();
-        res.json({message: "Feedback Submitted", proposal: updated});
-    }catch(err){
+
+        res.json({ message: "Feedback Submitted", proposal: updated });
+    } catch (err) {
         console.error(err);
-        res.status(500).json({message: err.message});
+        res.status(500).json({ message: err.message });
     }
 };

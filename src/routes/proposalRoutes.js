@@ -10,7 +10,7 @@ const router = Router();
 router.post('/', authMiddleware, roleMiddleware('EO'), upload.single("pdf"), createProposal);
 router.post('/:proposalId/send/:sponsorId', authMiddleware, roleMiddleware('EO'), sendProposalToSponsor);
 router.get('/fasttrack/me', authMiddleware, roleMiddleware('SPONSOR'), getFastTrackProposals);
-router.put('/:id/feedback', authMiddleware, roleMiddleware('SPONSOR'),feedbackProposal);
+router.put('/:id/feedback', authMiddleware, roleMiddleware('SPONSOR'), feedbackProposal);
 
 
 
