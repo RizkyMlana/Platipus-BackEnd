@@ -27,7 +27,7 @@ const options = {
       { bearerAuth: [] }
     ],
   },
-  apis: ["./src/controllers/*.js"],
+  apis: [path.join("./src/controllers/*.js")],
 };
 
 const specs = swaggerJsdoc(options);
