@@ -24,11 +24,9 @@ export const createProposal = async (req, res) => {
             return res.status(403).json({ message: "Unauthorized" });
         }
 
-        // CONSISTENT PATH
         const fileName = `proposal-${eventId}-${Date.now()}.pdf`;
         const storagePath = `proposal/${fileName}`;
 
-        // UPLOAD USING THE SAME PATH
         const { data: uploadData, error: uploadError } = await supa.storage
             .from("proposals")
             .upload(storagePath, req.file.buffer, {
@@ -40,7 +38,6 @@ export const createProposal = async (req, res) => {
             throw uploadError;
         }
 
-        // GET PUBLIC URL USING THE SAME PATH
         const { data: publicData } = supa.storage
             .from("proposals")
             .getPublicUrl(storagePath);
