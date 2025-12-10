@@ -28,12 +28,12 @@ const options = {
     ],
   },
   apis: [
-    "./routes/authRoutes.js",
-    "./routes/eventRoutes.js",
-    "./routes/paymentRoutes.js",
-    "./routes/proposalRoutes.js",
-    "./routes/profileRoutes.js",
-    "./routes/sponsorRoutes.js"
+    path.join(process.cwd(), "routes/authRoutes.js"),
+    path.join(process.cwd(), "routes/eventRoutes.js"),
+    path.join(process.cwd(), "routes/paymentRoutes.js"),
+    path.join(process.cwd(), "routes/proposalRoutes.js"),
+    path.join(process.cwd(), "routes/profileRoutes.js"),
+    path.join(process.cwd(), "routes/sponsorRoutes.js")
   ],
 };
 
