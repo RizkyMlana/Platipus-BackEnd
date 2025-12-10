@@ -7,34 +7,40 @@ import { supa } from '../config/storage.js';
 export const createProposal = async (req, res) => {
     try {
         const eoId = req.user.id;
-        const {eventId, submission_type} = req.body;
+        const { eventId, submission_type } = req.body;
 
-        if(!eventId || !submission_type || !req.file){
-            return res.status(400).json({ message: "Missing Fields"});
+        if (!eventId || !submission_type || !req.file) {
+            return res.status(400).json({ message: "Missing Fields" });
         }
-        if(req.file.mimetype !== "application/pdf") {
-            return res.status(400).json({ message: "File must be pdf"});
+        if (req.file.mimetype !== "application/pdf") {
+            return res.status(400).json({ message: "File must be pdf" });
         }
 
         const [event] = await db.select()
             .from(events)
             .where(eq(events.id, eventId));
-        if(!event || event.eo_id !== eoId){
-            return res.status(403).json({ message: "Unauthorized"});
+
+        if (!event || event.eo_id !== eoId) {
+            return res.status(403).json({ message: "Unauthorized" });
         }
 
+        // CONSISTENT PATH
         const fileName = `proposal-${eventId}-${Date.now()}.pdf`;
         const storagePath = `proposal/${fileName}`;
-        const { data, error} = await supa.storage
-            .from('proposals')
-            .upload(fileName, req.file.buffer, {
+
+        // UPLOAD USING THE SAME PATH
+        const { data: uploadData, error: uploadError } = await supa.storage
+            .from("proposals")
+            .upload(storagePath, req.file.buffer, {
                 contentType: "application/pdf",
-                upsert: false
             });
-        if (error) {
-            console.log("SUPABASE UPLOAD ERROR", error);
-            throw error;
+
+        if (uploadError) {
+            console.error("SUPABASE UPLOAD ERROR:", uploadError);
+            throw uploadError;
         }
+
+        // GET PUBLIC URL USING THE SAME PATH
         const { data: publicData } = supa.storage
             .from("proposals")
             .getPublicUrl(storagePath);
@@ -48,12 +54,18 @@ export const createProposal = async (req, res) => {
                 pdf_url: publicUrl,
             })
             .returning();
-        res.status(201).json({ message: 'Proposal Uploaded', proposal: created,})
-    }catch (err) {
+
+        res.status(201).json({
+            message: "Proposal Uploaded",
+            proposal: created,
+        });
+
+    } catch (err) {
         console.error(err);
-        res.status(500).json({ message: err.message});
+        res.status(500).json({ message: err.message });
     }
 };
+
 
 export const sendProposalToSponsor = async (req,res) => {
     try{
