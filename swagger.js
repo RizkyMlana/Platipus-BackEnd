@@ -27,7 +27,14 @@ const options = {
       { bearerAuth: [] }
     ],
   },
-  apis: ["./**/*.js"], // path ke file route kamu yang punya JSDoc annotations
+  apis: [
+    "./routes/authRoutes.js",
+    "./routes/eventRoutes.js",
+    "./routes/paymentRoutes.js",
+    "./routes/proposalRoutes.js",
+    "./routes/profileRoutes.js",
+    "./routes/sponsorRoutes.js"
+  ],
 };
 
 const specs = swaggerJsdoc(options);
