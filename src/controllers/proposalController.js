@@ -2,41 +2,53 @@ import { proposals, proposalSponsors } from '../db/schema/proposals.js';
 import { db } from '../db/index.js';
 import { eq, and} from 'drizzle-orm';
 import { events } from '../db/schema/events.js';
+import { supa } from '../config/storage.js';
 
 export const createProposal = async (req, res) => {
     try {
         const eoId = req.user.id;
-        const { eventId, submission_type, pdf_url } = req.body;
+        const {eventId, submission_type} = req.body;
 
-        if (!eventId || !submission_type || !pdf_url) {
+        if(!eventId || !submission_type || !req.file){
             return res.status(400).json({ message: "Missing Fields"});
         }
+        if(req.file.mimetype !== "application/pdf") {
+            return res.status(400).json({ message: "File must be pdf"});
+        }
+
         const [event] = await db.select()
             .from(events)
             .where(eq(events.id, eventId));
-        if(!event || event.eo_id !== eoId) {
+        if(!event || event.eo_id !== eoId){
             return res.status(403).json({ message: "Unauthorized"});
         }
-        const existing = await db.select()
-            .from(proposals)
-            .where(eq(proposals.event_id, eventId));
-        if(existing.length > 0) {
-            return res.status(409).json({message: "Proposal already created for this event"});
-        }
+
+        const fileName = `proposal-${eventId}-${Date.now()}.pdf`;
+
+        const { data, error} = await supa.storage
+            .from('proposals')
+            .upload(fileName, req.file.buffer, {
+                contentType: "application/pdf"
+            });
+        if (error) throw error;
+
+        const publicUrl = supa.storage
+            .from("proposals")
+            .getPublicUrl(fileName).data.publicUrl;
 
         const [created] = await db.insert(proposals)
             .values({
                 event_id: eventId,
                 submission_type,
-                pdf_url,
+                pdf_url: publicUrl,
             })
             .returning();
-        res.status(201).json({proposal :created});
+        res.status(201).json({ message: 'Proposal Uploaded', proposal: created,})
     }catch (err) {
         console.error(err);
         res.status(500).json({ message: err.message});
     }
-}
+};
 
 export const sendProposalToSponsor = async (req,res) => {
     try{
@@ -79,7 +91,7 @@ export const sendProposalToSponsor = async (req,res) => {
     } catch (err) {
         res.status(500).json({message: err.message});
     }
-}
+};
 
 export const getFastTrackProposals = async (req, res) => {
   try {
@@ -136,4 +148,4 @@ export const feedbackProposal = async (req, res) => {
         console.error(err);
         res.status(500).json({message: err.message});
     }
-}
+};
