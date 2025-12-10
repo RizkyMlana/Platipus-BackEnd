@@ -24,17 +24,22 @@ export const createProposal = async (req, res) => {
         }
 
         const fileName = `proposal-${eventId}-${Date.now()}.pdf`;
-
+        const storagePath = `proposal/${fileName}`;
         const { data, error} = await supa.storage
             .from('proposals')
             .upload(fileName, req.file.buffer, {
-                contentType: "application/pdf"
+                contentType: "application/pdf",
+                upsert: false
             });
-        if (error) throw error;
-
-        const publicUrl = supa.storage
+        if (error) {
+            console.log("SUPABASE UPLOAD ERROR", error);
+            throw error;
+        }
+        const { data: publicData } = supa.storage
             .from("proposals")
-            .getPublicUrl(fileName).data.publicUrl;
+            .getPublicUrl(storagePath);
+
+        const publicUrl = publicData.publicUrl;
 
         const [created] = await db.insert(proposals)
             .values({
