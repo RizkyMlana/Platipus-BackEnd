@@ -67,8 +67,8 @@ export const createProposal = async (req, res) => {
 export const sendProposalToSponsor = async (req,res) => {
     try{
         const eoId = req.user.id;
-        const { proposalId, sponsorProfileId } = req.body;
-        if(!proposalId || !sponsorProfileId) {
+        const { proposalId, sponsorId } = req.body;
+        if(!proposalId || !sponsorId) {
             return res.status(400).json({ message: "Missing Fields"});
         }
         const [prop] = await db.select()
