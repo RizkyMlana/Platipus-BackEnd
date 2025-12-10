@@ -167,8 +167,8 @@ export const feedbackProposal = async (req, res) => {
 
         const [ps] = await db
             .select()
-            .from(proposalSponsors)
-            .where(eq(proposalSponsors.id, id));
+            .from(proposals)
+            .where(eq(proposals.id, id));
 
             if (!ps || ps.sponsor_id !== sponsorId) {
                 return res.status(403).json({ message: "Unauthorized" });
