@@ -34,7 +34,7 @@ const options = {
     path.join(process.cwd(), "routes/paymentRoutes.js"),
     path.join(process.cwd(), "routes/proposalRoutes.js"),
     path.join(process.cwd(), "routes/profileRoutes.js"),
-    path.join(process.cwd(), "routes/sponsorRoutes.js")
+    path.join(process.cwd(), "routes/sponsorRoutes.js"),
   ],
 };
 
