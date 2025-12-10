@@ -144,18 +144,19 @@ export const feedbackProposal = async (req, res) => {
         const { id } = req.params;
         const { feedback, status } = req.body;
 
-        const [proposal] = await db
+        const [ps] = await db
             .select()
-            .from(proposals)
-            .where(eq(proposals.id,id));
-        
-        if(!proposal || proposal.sponsor_id !== sponsorId){
-            return res.status(403).json({message: "Unauthorized"});
-        }
+            .from(proposalSponsors)
+            .where(eq(proposalSponsors.id, id));
+
+            if (!ps || ps.sponsor_id !== sponsorId) {
+                return res.status(403).json({ message: "Unauthorized" });
+            }
+
         const [updated] = await db
-            .update(proposals)
+            .update(proposalSponsors)
             .set({feedback, status, updated_at: new Date()})
-            .where(eq(proposals.id, id))
+            .where(eq(proposalSponsors.id, id))
             .returning();
         res.json({message: "Feedback Submitted", proposal: updated});
     }catch(err){
