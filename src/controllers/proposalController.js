@@ -1,4 +1,5 @@
 import { proposals, proposalSponsors } from '../db/schema/proposals.js';
+import { sponsorProfiles } from '../db/schema/users.js';
 import { db } from '../db/index.js';
 import { eq, and} from 'drizzle-orm';
 import { events } from '../db/schema/events.js';
@@ -64,48 +65,68 @@ export const createProposal = async (req, res) => {
 };
 
 
-export const sendProposalToSponsor = async (req,res) => {
-    try{
+export const sendProposalToSponsor = async (req, res) => {
+    try {
         const eoId = req.user.id;
-        const { proposalId, sponsorId } = req.body;
-        if(!proposalId || !sponsorId) {
-            return res.status(400).json({ message: "Missing Fields"});
+
+        // Ambil dari params sesuai route kamu
+        const { proposalId, sponsorId } = req.params;
+
+        if (!proposalId || !sponsorId) {
+            return res.status(400).json({ message: "Missing Fields" });
         }
+
+        // Cek proposal ada
         const [prop] = await db.select()
             .from(proposals)
             .where(eq(proposals.id, proposalId))
             .limit(1);
-        if(!prop) return res.status(404).json({ message: "Proposal not found"});
 
+        if (!prop) {
+            return res.status(404).json({ message: "Proposal not found" });
+        }
+
+        // Cek apakah EO pemilik event
         const [event] = await db.select()
             .from(events)
             .where(eq(events.id, prop.event_id))
             .limit(1);
 
-        if(event.eo_id !== eoId) {
-            return res.status(403).json({ message: "Unauthorized"});
+        if (!event || event.eo_id !== eoId) {
+            return res.status(403).json({ message: "Unauthorized" });
         }
 
+        // Cek apakah sudah pernah kirim
         const existing = await db.select()
             .from(proposalSponsors)
-            .where(and(eq(proposalSponsors.proposal_id, proposalId), eq(proposalSponsors.sponsor_id, sponsorProfileId)));
+            .where(
+                and(
+                    eq(proposalSponsors.proposal_id, proposalId),
+                    eq(proposalSponsors.sponsor_id, sponsorId)
+                )
+            );
 
-        if(existing.length>0) {
-            return res.status(409).json({message: "Already sent to this sponsor"});
+        if (existing.length > 0) {
+            return res.status(409).json({ message: "Already sent to this sponsor" });
         }
 
+        // Insert baru
         const [created] = await db.insert(proposalSponsors)
             .values({
                 proposal_id: proposalId,
-                sponsor_id: sponsorProfileId,
+                sponsor_id: sponsorId, // INI sponsor_profile.id
                 status: "Pending",
             })
             .returning();
-        res.status(201).json({ message: "Sent", data: created});
+
+        res.status(201).json({ message: "Sent", data: created });
+
     } catch (err) {
-        res.status(500).json({message: err.message});
+        console.error(err);
+        res.status(500).json({ message: err.message });
     }
 };
+
 
 export const getFastTrackProposals = async (req, res) => {
   try {
