@@ -6,33 +6,6 @@ import { proposalSponsors, proposals } from "../db/schema/proposals.js";
 
 
 
-async function getSponsorProfileId(userId) {
-    const profile = await db.query.sponsorProfiles.findFirst({
-        where: eq(sponsorProfiles.user_id, userId),
-    });
-    return profile ? profile.id : null;
-}
-
-
-export const getSponsorProfile = async (req, res) => {
-    try {
-        const userId = req.user.id;
-
-        const profile = await db.query.sponsorProfiles.findFirst({
-            where: eq(sponsorProfiles.user_id, userId),
-        });
-
-        if (!profile) {
-            return res.status(404).json({ message: "Sponsor profile not found" });
-        }
-
-        res.json(profile);
-
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-};
-
 
 export const getIncomingProposals = async (req, res) => {
     try {
