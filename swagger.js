@@ -11,7 +11,7 @@ const options = {
     },
     servers: [
       {
-        url: "https://your-backend-url.railway.app", // ganti dengan URL deployment Railway
+        url: "https://platipus-back-end.vercel.app/", 
       },
     ],
     components: {
