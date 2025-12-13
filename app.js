@@ -8,19 +8,12 @@ dotenv.config();
 
 const app = express();
 
-app.use(cors({
-    origin: 'http://localhost:5173',
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"]
-}));
-
-
+app.use(cors({ origin: '*'}));
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 
 app.use('/api', router);
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
-console.log(JSON.stringify(specs, null, 2));
 
 export default app;
