@@ -8,11 +8,11 @@ dotenv.config();
 const app = express();
 
 
-app.use(cors({ origin: 'http://localhost:5137', credentials: true}));
+app.use(cors({ origin: 'http://localhost:5173', credentials: true}))
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 
-app.use('/api', router);
+app.use('/', router);
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
 
