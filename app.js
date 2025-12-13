@@ -1,11 +1,14 @@
 import express from 'express';
 import dotenv from 'dotenv';
+import cors from 'cors';
 import router from './src/routes/index.js';
 import { swaggerUi, specs } from "./swagger.js";
 dotenv.config();
 
 const app = express();
 
+
+app.use(cors({ origin: 'http://localhost:5137', credentials: true}));
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 
