@@ -13,9 +13,11 @@ app.use(cors({
         'http://localhost.5173',
         'https://platipus-back-end.vercel.app/'
     ],
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"]
 }));
+
+app.options("*", cors());
 
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
