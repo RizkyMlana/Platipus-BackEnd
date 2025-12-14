@@ -218,7 +218,9 @@ export const getProposalDetail = async (req, res) => {
 export const updateProposalStatus = async (req, res) => {
   try {
     const userId = req.user.id;
-    const sponsorId = await getSponsorProfileId(userId);
+    const sponsorId = await db.query.sponsorProfiles.findFirst({
+      where: eq(sponsorProfiles.user_id, userId),
+    });
 
     if (!sponsorId) {
       return res.status(404).json({ message: "Sponsor profile not found" });
