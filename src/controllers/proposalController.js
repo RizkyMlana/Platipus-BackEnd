@@ -138,66 +138,78 @@ export const createProposal = async (req, res) => {
  */
 
 export const sendProposalToSponsor = async (req, res) => {
-    try {
-        const eoId = req.user.id;
+  try {
+    const userId = req.user.id;
+    const { proposalId, sponsorId } = req.params;
 
-        // Ambil dari params sesuai route kamu
-        const { proposalId, sponsorId } = req.params;
-
-        if (!proposalId || !sponsorId) {
-            return res.status(400).json({ message: "Missing Fields" });
-        }
-
-        // Cek proposal ada
-        const [prop] = await db.select()
-            .from(proposals)
-            .where(eq(proposals.id, proposalId))
-            .limit(1);
-
-        if (!prop) {
-            return res.status(404).json({ message: "Proposal not found" });
-        }
-
-        // Cek apakah EO pemilik event
-        const [event] = await db.select()
-            .from(events)
-            .where(eq(events.id, prop.event_id))
-            .limit(1);
-
-        if (!event || event.eo_id !== eoId) {
-            return res.status(403).json({ message: "Unauthorized" });
-        }
-
-        // Cek apakah sudah pernah kirim
-        const existing = await db.select()
-            .from(proposalSponsors)
-            .where(
-                and(
-                    eq(proposalSponsors.proposal_id, proposalId),
-                    eq(proposalSponsors.sponsor_id, sponsorId)
-                )
-            );
-
-        if (existing.length > 0) {
-            return res.status(409).json({ message: "Already sent to this sponsor" });
-        }
-
-        // Insert baru
-        const [created] = await db.insert(proposalSponsors)
-            .values({
-                proposal_id: proposalId,
-                sponsor_id: sponsorId, // INI sponsor_profile.id
-                status: "Pending",
-            })
-            .returning();
-
-        res.status(201).json({ message: "Sent", data: created });
-
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: err.message });
+    if (!proposalId || !sponsorId) {
+      return res.status(400).json({ message: "Missing fields" });
     }
+
+    // pastikan user adalah EO
+    const eoProfile = await db.query.eoProfiles.findFirst({
+      where: eq(eoProfiles.user_id, userId),
+    });
+
+    if (!eoProfile) {
+      return res.status(403).json({ message: "Only EO can send proposals" });
+    }
+
+    const proposal = await db.query.proposals.findFirst({
+      where: eq(proposals.id, proposalId),
+    });
+
+    if (!proposal) {
+      return res.status(404).json({ message: "Proposal not found" });
+    }
+
+    const event = await db.query.events.findFirst({
+      where: eq(events.id, proposal.event_id),
+    });
+
+    if (!event || event.eo_id !== eoProfile.id) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    // validasi sponsor
+    const sponsorProfile = await db.query.sponsorProfiles.findFirst({
+      where: eq(sponsorProfiles.id, sponsorId),
+    });
+
+    if (!sponsorProfile) {
+      return res.status(404).json({ message: "Sponsor not found" });
+    }
+
+    const existing = await db.query.proposalSponsors.findFirst({
+      where: and(
+        eq(proposalSponsors.proposal_id, proposalId),
+        eq(proposalSponsors.sponsor_id, sponsorId)
+      ),
+    });
+
+    if (existing) {
+      return res.status(409).json({ message: "Already sent to this sponsor" });
+    }
+
+    const [created] = await db
+      .insert(proposalSponsors)
+      .values({
+        proposal_id: proposalId,
+        sponsor_id: sponsorId,
+        status: "Pending",
+      })
+      .returning();
+
+    res.status(201).json({
+      message: "Proposal sent to sponsor",
+      data: created,
+    });
+  } catch (err) {
+    console.error("sendProposalToSponsor error:", err);
+    res.status(500).json({ message: err.message });
+  }
 };
+
 
 /**
  * @swagger
@@ -294,33 +306,59 @@ export const getFastTrackProposals = async (req, res) => {
  */
 
 export const feedbackProposal = async (req, res) => {
-    try {
-        const sponsorId = req.user.id;
-        const { id } = req.params;
-        const { feedback, status } = req.body;
+  try {
+    const userId = req.user.id;
+    const { proposalSponsorId } = req.params;
+    const { feedback } = req.body;
 
-        const [ps] = await db
-            .select()
-            .from(proposalSponsors)
-            .where(eq(proposalSponsors.id, id));
-
-        if (!ps) {
-            return res.status(404).json({ message: "Proposal not found" });
-        }
-
-        if (ps.sponsor_id !== sponsorId) {
-            return res.status(403).json({ message: "Unauthorized" });
-        }
-
-        const [updated] = await db
-            .update(proposalSponsors)
-            .set({feedback, status, updated_at: new Date()})
-            .where(eq(proposalSponsors.id, id))
-            .returning();
-
-        res.json({ message: "Feedback Submitted", proposal: updated });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: err.message });
+    if (!feedback || !feedback.trim()) {
+      return res.status(400).json({ message: "Feedback is required" });
     }
+
+    // ambil sponsor profile (BUKAN userId)
+    const sponsorProfile = await db.query.sponsorProfiles.findFirst({
+      where: eq(sponsorProfiles.user_id, userId),
+    });
+
+    if (!sponsorProfile) {
+      return res.status(404).json({ message: "Sponsor profile not found" });
+    }
+
+    const ps = await db.query.proposalSponsors.findFirst({
+      where: and(
+        eq(proposalSponsors.id, proposalSponsorId),
+        eq(proposalSponsors.sponsor_id, sponsorProfile.id)
+      ),
+      with: { proposal: true },
+    });
+
+    if (!ps) {
+      return res.status(404).json({ message: "Proposal not found" });
+    }
+
+    // business rule
+    if (ps.proposal.submission_type !== "FAST_TRACK") {
+      return res.status(400).json({
+        message: "Feedback only allowed for FAST_TRACK proposals",
+      });
+    }
+
+    const [updated] = await db
+      .update(proposalSponsors)
+      .set({
+        feedback,
+        updated_at: new Date(),
+      })
+      .where(eq(proposalSponsors.id, proposalSponsorId))
+      .returning();
+
+    res.json({
+      message: "Feedback submitted",
+      proposal: updated,
+    });
+  } catch (err) {
+    console.error("feedbackProposal error", err);
+    res.status(500).json({ message: err.message });
+  }
 };
+
