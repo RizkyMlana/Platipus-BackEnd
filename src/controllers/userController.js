@@ -190,10 +190,23 @@ export const updateProfile = async (req, res) => {
     const role = req.user?.role;
 
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+
+    const body = req.body || {};
+    let updated = null;
     let profilePictureUrl;
 
-    if(req.file) {
-      const fileExt = req.file.originalname.split(".").pop();
+    if (req.file) {
+      const mimeMap = {
+        'image/jpeg': 'jpg',
+        'image/png': 'png',
+        'image/webp': 'webp'
+      };
+
+      const fileExt = mimeMap[req.file.mimetype];
+      if (!fileExt) {
+        return res.status(400).json({ message: "Invalid image type" });
+      }
+
       const filePath = `profiles/${userId}.${fileExt}`;
 
       const { error } = await supa.storage
@@ -202,9 +215,11 @@ export const updateProfile = async (req, res) => {
           contentType: req.file.mimetype,
           upsert: true
         });
+
       if (error) {
-        return res.status(500).json({ message:error.message});
+        return res.status(500).json({ message: error.message });
       }
+
       const { data } = supa.storage
         .from("avatars")
         .getPublicUrl(filePath);
@@ -218,13 +233,14 @@ export const updateProfile = async (req, res) => {
         })
         .where(eq(users.id, userId));
     }
+
     if (role === 'EO') {
       const allowed = ['organization_name', 'website', 'organization_address'];
-
       const payload = {};
+
       allowed.forEach(k => {
-        if (body.hasOwnProperty(k)) {
-          payload[k] = body[k] === undefined ? null : body[k];
+        if (Object.prototype.hasOwnProperty.call(body, k)) {
+          payload[k] = body[k] ?? null;
         }
       });
 
@@ -234,33 +250,24 @@ export const updateProfile = async (req, res) => {
         .limit(1);
 
       if (!found.length) {
-        const insertObj = {
+        const [ins] = await db.insert(eoProfiles).values({
           user_id: userId,
-          organization_name: payload.organization_name ?? null,
-          website: payload.website ?? null,
-          organization_address: payload.organization_address ?? null,
+          ...payload,
           created_at: new Date(),
           updated_at: new Date()
-        };
+        }).returning();
 
-        const [ins] = await db.insert(eoProfiles).values(insertObj).returning();
         updated = ins;
-
       } else {
         const [upd] = await db.update(eoProfiles)
-          .set({
-            ...payload,
-            updated_at: new Date()
-          })
+          .set({ ...payload, updated_at: new Date() })
           .where(eq(eoProfiles.user_id, userId))
           .returning();
 
         updated = upd;
       }
-    }
 
-
-    else if (role === 'SPONSOR') {
+    } else if (role === 'SPONSOR') {
       const allowed = [
         'company_name',
         'company_address',
@@ -277,8 +284,8 @@ export const updateProfile = async (req, res) => {
 
       const payload = {};
       allowed.forEach(k => {
-        if (body.hasOwnProperty(k)) {
-          payload[k] = body[k] === undefined ? null : body[k];
+        if (Object.prototype.hasOwnProperty.call(body, k)) {
+          payload[k] = body[k] ?? null;
         }
       });
 
@@ -288,32 +295,17 @@ export const updateProfile = async (req, res) => {
         .limit(1);
 
       if (!found.length) {
-        const insertObj = {
+        const [ins] = await db.insert(sponsorProfiles).values({
           user_id: userId,
-          company_name: payload.company_name ?? null,
-          company_address: payload.company_address ?? null,
-          industry: payload.industry ?? null,
-          website: payload.website ?? null,
-          social_media: payload.social_media ?? null,
-          sponsor_category_id: payload.sponsor_category_id ?? null,
-          sponsor_type_id: payload.sponsor_type_id ?? null,
-          sponsor_scope_id: payload.sponsor_scope_id ?? null,
-          budget_min: payload.budget_min ?? null,
-          budget_max: payload.budget_max ?? null,
-          status: payload.status ?? null,
+          ...payload,
           created_at: new Date(),
           updated_at: new Date()
-        };
+        }).returning();
 
-        const [ins] = await db.insert(sponsorProfiles).values(insertObj).returning();
         updated = ins;
-
       } else {
         const [upd] = await db.update(sponsorProfiles)
-          .set({
-            ...payload,
-            updated_at: new Date()
-          })
+          .set({ ...payload, updated_at: new Date() })
           .where(eq(sponsorProfiles.user_id, userId))
           .returning();
 
