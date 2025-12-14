@@ -2,7 +2,7 @@ import multer from "multer";
 
 const storage = multer.memoryStorage();
 
-export const upload = multer({
+export const uploadProposal = multer({
     storage,
     limits: {
         fileSize: 5 * 1024 * 1024, 
@@ -15,4 +15,24 @@ export const upload = multer({
     },
 });
 
-export default upload;
+export const uploadImage = multer({
+    storage,
+    limits: {
+        fileSize: 2 * 1024 * 1024,
+    },
+    fileFilter: (req, file, cb) => {
+        const allowed = [
+            "image/jpeg",
+            "image/png",
+            "image/webp"
+        ];
+
+        if(!allowed.includes(file.mimetype)) {
+            return cb(new Error("Only Images Kids"));
+        }
+
+        cb(null, true);
+    }
+
+})
+

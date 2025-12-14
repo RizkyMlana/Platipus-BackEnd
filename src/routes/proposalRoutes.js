@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { authMiddleware} from '../middlewares/authMiddleware.js';
 import { roleMiddleware } from "../middlewares/roleMiddleware.js";
 import { createProposal, getFastTrackProposals, feedbackProposal, sendProposalToSponsor} from '../controllers/proposalController.js';
-import { upload } from "../middlewares/multer.js";
+import { uploadProposal } from "../middlewares/multer.js";
 
 const router = Router();
 
@@ -43,7 +43,7 @@ const router = Router();
  *       500:
  *         description: Internal server error
  */
-router.post('/', authMiddleware, roleMiddleware('EO'), upload.single("pdf"), createProposal);
+router.post('/', authMiddleware, roleMiddleware('EO'), uploadProposal.single("pdf"), createProposal);
 /**
  * @swagger
  * /proposals/{proposalId}/send/{sponsorId}:
