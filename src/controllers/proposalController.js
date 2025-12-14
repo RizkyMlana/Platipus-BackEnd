@@ -167,8 +167,14 @@ export const sendProposalToSponsor = async (req, res) => {
     const event = await db.query.events.findFirst({
       where: eq(events.id, proposal.event_id),
     });
+    
 
     if (!event || event.eo_id !== eoProfile.id) {
+        console.log({
+            eoProfileId: eoProfile.id,
+            eventEoId: event.eo_id,
+            userIdFromToken: userId
+        });
       return res.status(403).json({ message: "Unauthorized" });
     }
 
