@@ -126,40 +126,56 @@ export const getIncomingProposals = async (req, res) => {
  *         description: Internal server error
  */
 export const getProposalDetail = async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const sponsorId = await getSponsorProfileId(userId);
+  try {
+    const userId = req.user.id;
 
-        if (!sponsorId) {
-            return res.status(404).json({ message: "Sponsor profile not found" });
-        }
+    const sponsorProfile = await db.query.sponsorProfiles.findFirst({
+      where: eq(sponsorProfiles.user_id, userId),
+    });
 
-        const { proposalSponsorId } = req.params;
-
-        const data = await db
-            .select({
-                proposal_sponsor: proposalSponsors,
-                proposal: proposals,
-                event: events,
-            })
-            .from(proposalSponsors)
-            .leftJoin(proposals, eq(proposals.id, proposalSponsors.proposal_id))
-            .leftJoin(events, eq(events.id, proposals.event_id))
-            .where(and(
-                eq(proposalSponsors.id, proposalSponsorId),
-                eq(proposalSponsors.sponsor_id, sponsorId)
-            ));
-
-        if (!data.length) {
-            return res.status(404).json({ message: "Proposal not found" });
-        }
-
-        res.json(data[0]);
-
-    } catch (err) {
-        res.status(500).json({ error: err.message });
+    if (!sponsorProfile) {
+      return res.status(404).json({ message: "Sponsor profile not found" });
     }
+
+    const { proposalSponsorId } = req.params;
+
+    const [data] = await db
+      .select({
+        proposalSponsor: {
+          id: proposalSponsors.id,
+          status: proposalSponsors.status,
+          feedback: proposalSponsors.feedback,
+        },
+        proposal: {
+          id: proposals.id,
+          submission_type: proposals.submission_type,
+          pdf_url: proposals.pdf_url,
+          created_at: proposals.created_at,
+        },
+        event: {
+          id: events.id,
+          name: events.name,
+        },
+      })
+      .from(proposalSponsors)
+      .innerJoin(proposals, eq(proposals.id, proposalSponsors.proposal_id))
+      .innerJoin(events, eq(events.id, proposals.event_id))
+      .where(and(
+        eq(proposalSponsors.id, proposalSponsorId),
+        eq(proposalSponsors.sponsor_id, sponsorProfile.id)
+      ));
+
+    if (!data) {
+      return res.status(404).json({ message: "Proposal not found" });
+    }
+
+    res.json(data);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
 };
+
 
 /**
  * @swagger

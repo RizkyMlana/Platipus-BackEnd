@@ -65,7 +65,7 @@ router.get("/incoming", authMiddleware, roleMiddleware('SPONSOR'), getIncomingPr
  *         description: Internal server error
  */
 
-router.get("/proposals/:proposalSponsorId", authMiddleware, roleMiddleware('SPONSOR'), getProposalDetail);
+router.get("/incoming/:proposalSponsorId", authMiddleware, roleMiddleware('SPONSOR'), getProposalDetail);
 /**
  * @swagger
  * /sponsor/proposals/{proposalSponsorId}/status:
