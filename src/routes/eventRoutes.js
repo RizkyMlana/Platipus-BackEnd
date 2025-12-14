@@ -193,4 +193,5 @@ router.get('/', getAllEvent);
  */
 router.get('/:eventId', getDetailEvent);
 
+
 export default router;
