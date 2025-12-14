@@ -216,53 +216,70 @@ export const getProposalDetail = async (req, res) => {
  *         description: Internal server error
  */
 export const updateProposalStatus = async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const sponsorId = await getSponsorProfileId(userId);
+  try {
+    const userId = req.user.id;
+    const sponsorId = await getSponsorProfileId(userId);
 
-        if (!sponsorId) {
-            return res.status(404).json({ message: "Sponsor profile not found" });
-        }
-
-        const { proposalSponsorId } = req.params;
-        const { status, feedback } = req.body;
-
-        if (!["Accepted", "Rejected", "Pending"].includes(status)) {
-            return res.status(400).json({ message: "Invalid status" });
-        }
-
-        const ps = await db.query.proposalSponsors.findFirst({
-            where: and(
-                eq(proposalSponsors.id, proposalSponsorId),
-                eq(proposalSponsors.sponsor_id, sponsorId)
-            ),
-            with: { proposal: true },
-        });
-
-        if (!ps) {
-            return res.status(404).json({ message: "Proposal not found" });
-        }
-
-        let updateData = { status };
-
-        // feedback hanya untuk fasttrack
-        if (ps.proposal.submission_type === "fasttrack") {
-            if (feedback) updateData.feedback = feedback;
-        } else {
-            updateData.feedback = null; // manual tidak boleh punya feedback
-        }
-
-        const updated = await db
-            .update(proposalSponsors)
-            .set(updateData)
-            .where(eq(proposalSponsors.id, proposalSponsorId))
-            .returning();
-
-        res.json(updated[0]);
-
-    } catch (err) {
-        res.status(500).json({ error: err.message });
+    if (!sponsorId) {
+      return res.status(404).json({ message: "Sponsor profile not found" });
     }
+
+    const { proposalSponsorId } = req.params;
+    const { status, feedback } = req.body;
+
+    const VALID_STATUS = ["PENDING", "ACCEPTED", "REJECTED"];
+    if (!VALID_STATUS.includes(status)) {
+      return res.status(400).json({ message: "Invalid status" });
+    }
+
+    const ps = await db.query.proposalSponsors.findFirst({
+      where: and(
+        eq(proposalSponsors.id, proposalSponsorId),
+        eq(proposalSponsors.sponsor_id, sponsorId)
+      ),
+      with: { proposal: true },
+    });
+
+    if (!ps) {
+      return res.status(404).json({ message: "Proposal not found" });
+    }
+
+    // state transition guard
+    const ALLOWED_TRANSITIONS = {
+      PENDING: ["ACCEPTED", "REJECTED"],
+      ACCEPTED: [],
+      REJECTED: [],
+    };
+
+    if (!ALLOWED_TRANSITIONS[ps.status]?.includes(status)) {
+      return res.status(400).json({
+        message: `Cannot change status from ${ps.status} to ${status}`,
+      });
+    }
+
+    const updateData = {
+      status,
+      updated_at: new Date(),
+    };
+
+    // feedback hanya fasttrack
+    if (ps.proposal.submission_type === "FAST_TRACK") {
+      if (feedback !== undefined) {
+        updateData.feedback = feedback;
+      }
+    }
+
+    const [updated] = await db
+      .update(proposalSponsors)
+      .set(updateData)
+      .where(eq(proposalSponsors.id, proposalSponsorId))
+      .returning();
+
+    res.json(updated);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
 };
 
 /**
