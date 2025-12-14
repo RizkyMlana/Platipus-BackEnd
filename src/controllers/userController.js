@@ -1,6 +1,8 @@
 import { db } from '../db/index.js';
 import { users, eoProfiles, sponsorProfiles} from '../db/schema/users.js';
 import { eq } from 'drizzle-orm';
+import { supa } from '../config/storage.js';
+
 
 
 /**
@@ -188,19 +190,34 @@ export const updateProfile = async (req, res) => {
     const role = req.user?.role;
 
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
-    if (!role) return res.status(400).json({ message: 'User role missing' });
+    let profilePictureUrl;
 
-    const { profile_picture_url, ...body } = req.body;
+    if(req.file) {
+      const fileExt = req.file.originalname.split(".").pop();
+      const filePath = `profiles/${userId}.${fileExt}`;
 
-    await db.update(users)
-      .set({
-        updated_at: new Date(),
-        ...(profile_picture_url !== undefined ? { profile_picture_url } : {})
-      })
-      .where(eq(users.id, userId));
+      const { error } = await supa.storage
+        .from("avatars")
+        .upload(filePath, req.file.buffer, {
+          contentType: req.file.mimetype,
+          upsert: true
+        });
+      if (error) {
+        return res.status(500).json({ message:error.message});
+      }
+      const { data } = supa.storage
+        .from("avatars")
+        .getPublicUrl(filePath);
 
-    let updated = null;
+      profilePictureUrl = data.publicUrl;
 
+      await db.update(users)
+        .set({
+          profile_picture_url: profilePictureUrl,
+          updated_at: new Date()
+        })
+        .where(eq(users.id, userId));
+    }
     if (role === 'EO') {
       const allowed = ['organization_name', 'website', 'organization_address'];
 
