@@ -218,16 +218,18 @@ export const getProposalDetail = async (req, res) => {
 export const updateProposalStatus = async (req, res) => {
   try {
     const userId = req.user.id;
-    const sponsorId = await db.query.sponsorProfiles.findFirst({
+
+    const sponsorProfile = await db.query.sponsorProfiles.findFirst({
       where: eq(sponsorProfiles.user_id, userId),
     });
 
-    if (!sponsorId) {
+    if (!sponsorProfile) {
       return res.status(404).json({ message: "Sponsor profile not found" });
     }
 
+    const sponsorId = sponsorProfile.id;
     const { proposalSponsorId } = req.params;
-    const { status, feedback } = req.body;
+    const { status } = req.body;
 
     const VALID_STATUS = ["PENDING", "ACCEPTED", "REJECTED"];
     if (!VALID_STATUS.includes(status)) {
@@ -239,41 +241,18 @@ export const updateProposalStatus = async (req, res) => {
         eq(proposalSponsors.id, proposalSponsorId),
         eq(proposalSponsors.sponsor_id, sponsorId)
       ),
-      with: { proposal: true },
     });
 
     if (!ps) {
       return res.status(404).json({ message: "Proposal not found" });
     }
 
-    // state transition guard
-    const ALLOWED_TRANSITIONS = {
-      PENDING: ["ACCEPTED", "REJECTED"],
-      ACCEPTED: [],
-      REJECTED: [],
-    };
-
-    if (!ALLOWED_TRANSITIONS[ps.status]?.includes(status)) {
-      return res.status(400).json({
-        message: `Cannot change status from ${ps.status} to ${status}`,
-      });
-    }
-
-    const updateData = {
-      status,
-      updated_at: new Date(),
-    };
-
-    // feedback hanya fasttrack
-    if (ps.proposal.submission_type === "FAST_TRACK") {
-      if (feedback !== undefined) {
-        updateData.feedback = feedback;
-      }
-    }
-
     const [updated] = await db
       .update(proposalSponsors)
-      .set(updateData)
+      .set({
+        status,
+        updated_at: new Date(),
+      })
       .where(eq(proposalSponsors.id, proposalSponsorId))
       .returning();
 
@@ -283,6 +262,7 @@ export const updateProposalStatus = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
 
 /**
  * @swagger
