@@ -41,7 +41,7 @@ const router = Router();
  *         description: Internal server error
  */
 
-router.get("/proposals/", authMiddleware, roleMiddleware('SPONSOR'), getIncomingProposals);
+router.get("/incoming", authMiddleware, roleMiddleware('SPONSOR'), getIncomingProposals);
 /**
  * @swagger
  * /sponsor/proposals/{proposalSponsorId}:

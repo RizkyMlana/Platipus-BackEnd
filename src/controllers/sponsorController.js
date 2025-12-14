@@ -42,45 +42,66 @@ import { proposalSponsors, proposals } from "../db/schema/proposals.js";
  *         description: Internal server error
  */
 export const getIncomingProposals = async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const sponsorId = await getSponsorProfileId(userId);
+  try {
+    const userId = req.user.id;
 
-        if (!sponsorId) {
-            return res.status(404).json({ message: "Sponsor profile not found" });
-        }
+    const sponsorProfile = await db.query.sponsorProfiles.findFirst({
+      where: eq(sponsorProfiles.user_id, userId),
+    });
 
-        const { status, submission_type, from, to } = req.query;
-
-        let conditions = [
-            eq(proposalSponsors.sponsor_id, sponsorId)
-        ];
-
-        if (status) conditions.push(eq(proposalSponsors.status, status));
-        if (submission_type) conditions.push(eq(proposals.submission_type, submission_type));
-        if (from) conditions.push(gte(proposals.created_at, new Date(from)));
-        if (to) conditions.push(lte(proposals.created_at, new Date(to)));
-
-        const data = await db
-            .select({
-                proposal_sponsor_id: proposalSponsors.id,
-                proposal_id: proposals.id,
-                status: proposalSponsors.status,
-                feedback: proposalSponsors.feedback,
-                event: events,
-            })
-            .from(proposalSponsors)
-            .leftJoin(proposals, eq(proposals.id, proposalSponsors.proposal_id))
-            .leftJoin(events, eq(events.id, proposals.event_id))
-            .where(and(...conditions))
-            .orderBy(desc(proposals.created_at));
-
-        res.json(data);
-
-    } catch (err) {
-        res.status(500).json({ error: err.message });
+    if (!sponsorProfile) {
+      return res.status(404).json({ message: "Sponsor profile not found" });
     }
+
+    const sponsorId = sponsorProfile.id;
+
+    const { status, submission_type, from, to } = req.query;
+
+    const conditions = [
+      eq(proposalSponsors.sponsor_id, sponsorId),
+    ];
+
+    if (status) {
+      conditions.push(eq(proposalSponsors.status, status));
+    }
+
+    if (submission_type) {
+      conditions.push(eq(proposals.submission_type, submission_type));
+    }
+
+    if (from && !isNaN(new Date(from))) {
+      conditions.push(gte(proposals.created_at, new Date(from)));
+    }
+
+    if (to && !isNaN(new Date(to))) {
+      conditions.push(lte(proposals.created_at, new Date(to)));
+    }
+
+    const data = await db
+      .select({
+        proposalSponsorId: proposalSponsors.id,
+        proposalId: proposals.id,
+        status: proposalSponsors.status,
+        feedback: proposalSponsors.feedback,
+        createdAt: proposals.created_at,
+        event: {
+          id: events.id,
+          name: events.name,
+        },
+      })
+      .from(proposalSponsors)
+      .innerJoin(proposals, eq(proposals.id, proposalSponsors.proposal_id))
+      .innerJoin(events, eq(events.id, proposals.event_id))
+      .where(and(...conditions))
+      .orderBy(desc(proposals.created_at));
+
+    res.json(data);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
 };
+
 
 /**
  * @swagger
