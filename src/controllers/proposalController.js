@@ -170,12 +170,13 @@ export const sendProposalToSponsor = async (req, res) => {
     
 
     if (!event || event.eo_id !== eoProfile.id) {
-        console.log({
+        
+      return console.log({
             eoProfileId: eoProfile.id,
             eventEoId: event.eo_id,
             userIdFromToken: userId
-        });
-      return res.status(403).json({ message: "Unauthorized" });
+        }); 
+        // res.status(403).json({ message: "Unauthorized" });
     }
 
     // validasi sponsor
