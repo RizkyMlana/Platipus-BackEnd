@@ -210,7 +210,7 @@ export const updateProfile = async (req, res) => {
       const filePath = `profiles/${userId}.${fileExt}`;
 
       const { error } = await supa.storage
-        .from("avatars")
+        .from("Platipus")
         .upload(filePath, req.file.buffer, {
           contentType: req.file.mimetype,
           upsert: true
@@ -221,7 +221,7 @@ export const updateProfile = async (req, res) => {
       }
 
       const { data } = supa.storage
-        .from("avatars")
+        .from("Platipus")
         .getPublicUrl(filePath);
 
       profilePictureUrl = data.publicUrl;

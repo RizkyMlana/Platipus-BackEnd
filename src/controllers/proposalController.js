@@ -67,7 +67,7 @@ export const createProposal = async (req, res) => {
         const storagePath = `proposal/${fileName}`;
 
         const { data: uploadData, error: uploadError } = await supa.storage
-            .from("proposals")
+            .from("Platipus")
             .upload(storagePath, req.file.buffer, {
                 contentType: "application/pdf",
             });
@@ -78,7 +78,7 @@ export const createProposal = async (req, res) => {
         }
 
         const { data: publicData } = supa.storage
-            .from("proposals")
+            .from("Platipus")
             .getPublicUrl(storagePath);
 
         const publicUrl = publicData.publicUrl;
