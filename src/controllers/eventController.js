@@ -467,6 +467,7 @@ export const getDetailEvent = async (req, res) => {
         requirements: events.requirements,
         description: events.description,
         proposal_url: events.proposal_url,
+        image_url: events.image_url,
         start_time: events.start_time,
         end_time: events.end_time,
         category: eventCategories.name,
@@ -606,7 +607,7 @@ export const getRegisteredSponsorsByEO = async (req, res) => {
 
         proposal_id: proposals.id,
         submission_type: proposals.submission_type,
-
+        pdf_url: proposals.pdf_url,
         proposal_sponsor_id: proposalSponsors.id,
         proposal_status: proposalSponsors.status,
       })
