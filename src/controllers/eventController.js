@@ -425,25 +425,41 @@ export const getProposalsByEO = async (req, res) => {
 
     // Ambil semua event milik EO
     const eventsList = await db.select({
-        event_id: events.id
-      })
-      .from(events)
-      .where(eq(events.eo_id, eoId));
-
-    if (!eventsList.length) {
-      return res.json({ proposals: [] });
-    }
+      event_id: events.id,
+    })
+    .from(events)
+    .where(eq(events.eo_id, eoId));
 
     const eventIds = eventsList.map(e => e.event_id);
 
-    const proposalsList = await db.select({
+    if (!eventIds.length) {
+      return res.json({ proposals: [] });
+    }
+
+    // Ambil proposal + join ke master tables
+    const proposalsList = await db
+      .select({
         proposal_id: proposals.id,
         pdf_url: proposals.pdf_url,
         submission_type: proposals.submission_type,
         created_at: proposals.created_at,
         event_id: proposals.event_id,
+        event_name: events.name,
+        event_location: events.location,
+        event_target: events.target,
+        event_requirements: events.requirements,
+        event_description: events.description,
+        category_name: event_categories.name,
+        sponsor_type_name: event_sponsor_types.name,
+        size_name: event_sizes.name,
+        mode_name: event_modes.name,
       })
       .from(proposals)
+      .leftJoin(events, eq(events.id, proposals.event_id))
+      .leftJoin(event_categories, eq(event_categories.id, events.category_id))
+      .leftJoin(event_sponsor_types, eq(event_sponsor_types.id, events.sponsor_type_id))
+      .leftJoin(event_sizes, eq(event_sizes.id, events.size_id))
+      .leftJoin(event_modes, eq(event_modes.id, events.mode_id))
       .where(proposals.event_id.in(eventIds))
       .orderBy(desc(proposals.created_at));
 
