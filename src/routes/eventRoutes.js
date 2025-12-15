@@ -119,7 +119,7 @@ router.post('/', authMiddleware, uploadEvent.single("image"), roleMiddleware('EO
  *       500:
  *         description: Internal server error
  */
-router.put('/:eventId', authMiddleware, roleMiddleware('EO'), updateEvent);
+router.put('/:eventId', authMiddleware, uploadEvent.single("image"),roleMiddleware('EO'), updateEvent);
 /**
  * @swagger
  * /events/{eventId}:

@@ -222,15 +222,13 @@ export const updateEvent = async (req, res) => {
     const { eventId: id } = req.params;
     const eoId = req.user.id;
 
-    // Debug: cek params
-    console.log("Update Event - params id:", id, "eoId:", eoId);
+    
 
     const [existing] = await db
       .select()
       .from(events)
       .where(and(eq(events.id, id), eq(events.eo_id, eoId)));
 
-    console.log("Existing event:", existing);
 
     if (!existing) {
       return res.status(404).json({ 
@@ -270,6 +268,24 @@ export const updateEvent = async (req, res) => {
     if (sizeId !== undefined) editEvent.size_id = Number(sizeId);
     if (modeId !== undefined) editEvent.mode_id = Number(modeId);
 
+
+    if (req.file){
+      const ext = req.file.originalname.split(".").pop();
+      const filePath = `events/${eoId}-${Date.now()}.${ext}`;
+
+      const { error } = await supa.storage
+        .from("Platipus")
+        .upload(filePath, req.file.buffer, {
+          contentType: req.file.mimetype,
+        });
+      if (error) throw error;
+      const { data } = supa.storage
+        .from("Platipus")
+        .getPublicUrl(filePath)
+      
+      editEvent.image_url = data.publicUrl;
+    }
+    
     editEvent.updated_at = new Date();
 
     const [updated] = await db
