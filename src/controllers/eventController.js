@@ -613,8 +613,16 @@ export const getRegisteredSponsorsByEO = async (req, res) => {
       .from(proposalSponsors)
       .innerJoin(proposals, eq(proposals.id, proposalSponsors.proposal_id))
       .innerJoin(events, eq(events.id, proposals.event_id))
-      .innerJoin(sponsorProfiles, eq(sponsorProfiles.id, proposalSponsors.sponsor_id))
-      .where(eq(events.eo_id, eoProfile.id))
+      .innerJoin(
+        sponsorProfiles,
+        eq(sponsorProfiles.id, proposalSponsors.sponsor_id)
+      )
+      .where(
+        and(
+          eq(events.eo_id, eoProfile.id),
+          ne(proposals.submission_type, "REGULER")
+        )
+      )
       .orderBy(desc(proposalSponsors.created_at));
 
     res.json({ sponsors: data });
