@@ -1,7 +1,7 @@
 import { events } from '../db/schema/events.js';
 import { db } from '../db/index.js';
 import { validateEventTimes } from '../utils/dateValidator.js';
-import { eq, and, desc} from 'drizzle-orm';
+import { eq, and, desc, ne} from 'drizzle-orm';
 import { eventCategories, eventModes, eventSizes, eventSponsorTypes } from '../db/schema/masterTable.js';
 import { proposals, proposalSponsors } from '../db/schema/proposals.js';
 import { supa } from '../config/storage.js';
