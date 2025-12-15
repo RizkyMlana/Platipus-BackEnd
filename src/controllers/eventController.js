@@ -105,7 +105,7 @@ export const createEvent = async (req, res) => {
       const filePath = `events/${eoId}-${Date.now()}.${ext}`;
 
       const { error } = await supa.storage
-        .from("events")
+        .from("Platipus")
         .upload(filePath, req.file.buffer, {
           contentType: req.file.mimetype,
           upsert: false,
@@ -116,7 +116,7 @@ export const createEvent = async (req, res) => {
       }
 
       const { data } = supa.storage
-        .from("events")
+        .from("Platipus")
         .getPublicUrl(filePath);
 
       imageUrl = data.publicUrl;
