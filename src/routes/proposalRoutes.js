@@ -142,7 +142,7 @@ router.get('/fasttrack/me', authMiddleware, roleMiddleware('SPONSOR'), getFastTr
  *       500:
  *         description: Internal server error
  */
-router.put('/:id/feedback', authMiddleware, roleMiddleware('SPONSOR'), feedbackProposal);
+router.put('/:proposalSponsorId/feedback', authMiddleware, roleMiddleware('SPONSOR'), feedbackProposal);
 
 
 
