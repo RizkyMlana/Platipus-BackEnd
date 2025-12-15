@@ -248,6 +248,8 @@ export const getFastTrackProposals = async (req, res) => {
     if(!sponsorProfile) {
       return res.status(403).json({ message: "Sponsor profile not found"});
     }
+
+    const sponsorId = sponsorProfile.id;
     const result = await db.select({
         ps_id: proposalSponsors.id,
         status: proposalSponsors.status,
