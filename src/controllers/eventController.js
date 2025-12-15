@@ -547,31 +547,23 @@ export const getProposalsByEO = async (req, res) => {
 
 export const getFastTrackProposalByEO = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const eoProfile = await db.query.eoProfiles.findFirst({
-      where: eq(eoProfiles.user_id, userId),
-    });
-
-    if(!eoProfile) {
-      return res.status(403).json({ message: "Only EO can access this"});
-    }
+    const eoUserId = req.user.id;
 
     const data = await db
       .select({
         proposal_id: proposals.id,
-        submission_type: proposals.submission_type,
         pdf_url: proposals.pdf_url,
         created_at: proposals.created_at,
 
         proposal_sponsor_id: proposalSponsors.id,
+        sponsor_id: proposalSponsors.sponsor_id,
         status: proposalSponsors.status,
         feedback: proposalSponsors.feedback,
 
-        sponsor_id: sponsorProfiles.id,
-        sponsor_name: sponsorProfiles.company_name,
-
         event_id: events.id,
         event_name: events.name,
+
+        sponsor_company: sponsorProfiles.company_name,
       })
       .from(proposals)
       .innerJoin(events, eq(events.id, proposals.event_id))
@@ -579,17 +571,20 @@ export const getFastTrackProposalByEO = async (req, res) => {
       .innerJoin(sponsorProfiles, eq(sponsorProfiles.id, proposalSponsors.sponsor_id))
       .where(
         and(
-          eq(events.eo_id, eoProfile.id),
-          eq(proposals.submission_type, "FAST_TRACK")
+          eq(events.eo_id, eoUserId),
+          eq(proposals.submission_type, "fasttrack")
         )
       )
       .orderBy(desc(proposals.created_at));
-    res.json({ proposals: data});
-  } catch(err) {
-    res.status(500).json({message: err.message});
+
+    res.json({ proposals: data });
+
+  } catch (err) {
+    console.error("getFastTrackByEO error:", err);
+    res.status(500).json({ message: err.message });
   }
-  
 };
+
 
 export const getRegisteredSponsorsByEO = async (req, res) => {
   try {
