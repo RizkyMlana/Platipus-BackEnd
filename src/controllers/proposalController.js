@@ -1,5 +1,6 @@
 import { proposals, proposalSponsors } from '../db/schema/proposals.js';
 import { eoProfiles } from '../db/schema/users.js';
+import { sponsorProfiles } from '../db/schema/users.js';
 import { db } from '../db/index.js';
 import { eq, and} from 'drizzle-orm';
 import { events } from '../db/schema/events.js';
