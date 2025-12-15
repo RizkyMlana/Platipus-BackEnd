@@ -87,11 +87,8 @@ export const createProposal = async (req, res) => {
       return res.status(403).json({ message: "Unauthorized" });
     }
 
-    // =========================
-    // UPLOAD TO SUPABASE
-    // =========================
     const fileName = `proposal-${eventId}-${Date.now()}.pdf`;
-    const storagePath = `proposals/${fileName}`;
+    const storagePath = `proposal/${fileName}`;
 
     const { error: uploadError } = await supa.storage
       .from("Platipus")
