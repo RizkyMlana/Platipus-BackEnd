@@ -572,7 +572,7 @@ export const getFastTrackProposalByEO = async (req, res) => {
       .where(
         and(
           eq(events.eo_id, eoUserId),
-          eq(proposals.submission_type, "fasttrack")
+          eq(proposals.submission_type, "FAST_TRACK")
         )
       )
       .orderBy(desc(proposals.created_at));
