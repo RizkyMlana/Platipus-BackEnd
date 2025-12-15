@@ -3,7 +3,7 @@ import { db } from "../db/index.js";
 import { sponsorProfiles } from "../db/schema/users.js";
 import { events } from "../db/schema/events.js";
 import { proposalSponsors, proposals } from "../db/schema/proposals.js";
-
+import { sponsorCategories, sponsorScopes, sponsorTypes } from "../db/schema/masterTable.js";
 
 
 /**
