@@ -26,6 +26,7 @@ export const sponsorProfiles = pgTable('sponsor_profiles', {
   user_id: uuid('user_id').references(() => users.id).notNull().unique(),
   company_name: varchar('company_name', { length: 255 }).notNull(),
   company_address: varchar('company_address', { length: 255 }),
+  description: text('description'),
   industry: varchar('industry', { length: 255 }),
   website: varchar('website', { length: 255 }),
   social_media: jsonb('social_media'),

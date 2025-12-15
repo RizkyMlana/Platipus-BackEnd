@@ -272,6 +272,7 @@ export const updateProfile = async (req, res) => {
         'company_name',
         'company_address',
         'industry',
+        'description',
         'website',
         'social_media',
         'sponsor_category_id',
