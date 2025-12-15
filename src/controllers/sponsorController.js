@@ -1,4 +1,4 @@
-import { and, eq, gte, lte, desc } from "drizzle-orm";
+import { and, eq, gte, lte, desc, asc } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { sponsorProfiles } from "../db/schema/users.js";
 import { events } from "../db/schema/events.js";
