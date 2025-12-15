@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createEvent, updateEvent, getAllEvent, deleteEvent, getDetailEvent, getMyEvents } from '../controllers/eventController.js';
+import { createEvent, updateEvent, getAllEvent, deleteEvent, getDetailEvent, getMyEvents, getProposalsByEO } from '../controllers/eventController.js';
 import { authMiddleware } from '../middlewares/authMiddleware.js';
 import { roleMiddleware } from '../middlewares/roleMiddleware.js';
 
@@ -192,6 +192,8 @@ router.get('/', getAllEvent);
  *         description: Internal server error
  */
 router.get('/:eventId', getDetailEvent);
+
+router.get('/proposals', authMiddleware, roleMiddleware("EO"), getProposalsByEO);
 
 
 export default router;

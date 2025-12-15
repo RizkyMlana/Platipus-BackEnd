@@ -3,6 +3,7 @@ import { db } from '../db/index.js';
 import { validateEventTimes } from '../utils/dateValidator.js';
 import { eq, and, desc} from 'drizzle-orm';
 import { eventCategories, eventModes, eventSizes, eventSponsorTypes } from '../db/schema/masterTable.js';
+import { proposals } from '../db/schema/proposals.js';
 
 
 /**
@@ -414,6 +415,42 @@ export const getDetailEvent = async (req, res) => {
 
   } catch (err) {
     console.error(err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+export const getProposalsByEO = async (req, res) => {
+  try {
+    const eoId = req.user.id;
+
+    // Ambil semua event milik EO
+    const eventsList = await db.select({
+        event_id: events.id
+      })
+      .from(events)
+      .where(eq(events.eo_id, eoId));
+
+    if (!eventsList.length) {
+      return res.json({ proposals: [] });
+    }
+
+    const eventIds = eventsList.map(e => e.event_id);
+
+    const proposalsList = await db.select({
+        proposal_id: proposals.id,
+        pdf_url: proposals.pdf_url,
+        submission_type: proposals.submission_type,
+        created_at: proposals.created_at,
+        event_id: proposals.event_id,
+      })
+      .from(proposals)
+      .where(proposals.event_id.in(eventIds))
+      .orderBy(desc(proposals.created_at));
+
+    res.json({ proposals: proposalsList });
+
+  } catch (err) {
+    console.error("getProposalsByEO error:", err);
     res.status(500).json({ message: err.message });
   }
 };
