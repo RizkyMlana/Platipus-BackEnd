@@ -324,6 +324,7 @@ export const getAllSponsors = async (req, res) => {
         sponsor_id: sponsorProfiles.id,
         company_name: sponsorProfiles.company_name,
         company_address: sponsorProfiles.company_address,
+        description: sponsorProfiles.description,
         industry: sponsorProfiles.industry,
         website: sponsorProfiles.website,
         social_media: sponsorProfiles.social_media,
