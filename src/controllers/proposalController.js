@@ -169,17 +169,8 @@ export const sendProposalToSponsor = async (req, res) => {
     });
     
 
-    if (!event || event.eo_id !== eoProfile.id) {
-      // return res.status(403).json({ message: "Unauthorized" });
-      return res.status(403).json({
-        message: "Unauthorized",
-        debug: {
-          eoProfileId : eoProfile.id,
-          eventEoId : event?.eo_id,
-          userIdFromToken : userId,
-          proposalEventId : proposal.event_id
-        }
-      })
+    if (!event || event.eo_id !== userId) {
+      return res.status(403).json({ message: "Unauthorized" });
     }
 
     // validasi sponsor
