@@ -339,7 +339,6 @@ export const feedbackProposal = async (req, res) => {
         eq(proposalSponsors.id, proposalSponsorId),
         eq(proposalSponsors.sponsor_id, sponsorProfile.id)
       ),
-      with: { proposal: true },
     });
 
     if (!ps) {
