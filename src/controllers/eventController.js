@@ -619,13 +619,13 @@ export const getRegisteredSponsorsByEO = async (req, res) => {
       )
       .where(
         and(
-          eq(events.eo_id, eoProfile.id),
+          eq(events.eo_id, userId),               // ✅ FIX UTAMA
           ne(proposals.submission_type, "REGULAR")
         )
       )
       .orderBy(desc(proposalSponsors.created_at));
 
-    res.json({ proposals: data });
+    res.json({ sponsors: data });
   } catch (err) {
     console.error("getRegisteredSponsorsByEO error:", err);
     res.status(500).json({ message: err.message });
