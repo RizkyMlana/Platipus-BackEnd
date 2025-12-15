@@ -333,6 +333,8 @@ export const feedbackProposal = async (req, res) => {
     if (!sponsorProfile) {
       return res.status(404).json({ message: "Sponsor profile not found" });
     }
+    console.log("proposalSponsorId:", proposalSponsorId);
+    console.log("sponsorProfile:", sponsorProfile);
 
     const ps = await db.query.proposalSponsors.findFirst({
       where: and(
