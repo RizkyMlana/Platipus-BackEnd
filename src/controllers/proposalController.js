@@ -336,12 +336,18 @@ export const feedbackProposal = async (req, res) => {
     console.log("proposalSponsorId:", proposalSponsorId);
     console.log("sponsorProfile:", sponsorProfile);
 
-    const ps = await db.query.proposalSponsors.findFirst({
-      where: and(
+    
+    const [ps] = await db.select({
+      ps: proposalSponsors,
+      proposal: proposals,
+    })
+      .from(proposalSponsors)
+      .innerJoin(proposals, eq(proposalSponsors.proposal_id, proposals.id))
+      .where(and(
         eq(proposalSponsors.id, proposalSponsorId),
         eq(proposalSponsors.sponsor_id, sponsorProfile.id)
-      ),
-    });
+      ))
+      .limit(1);
 
     if (!ps) {
       return res.status(404).json({ message: "Proposal not found" });
