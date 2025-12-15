@@ -620,12 +620,12 @@ export const getRegisteredSponsorsByEO = async (req, res) => {
       .where(
         and(
           eq(events.eo_id, eoProfile.id),
-          ne(proposals.submission_type, "REGULER")
+          ne(proposals.submission_type, "REGULAR")
         )
       )
       .orderBy(desc(proposalSponsors.created_at));
 
-    res.json({ sponsors: data });
+    res.json({ proposals: data });
   } catch (err) {
     console.error("getRegisteredSponsorsByEO error:", err);
     res.status(500).json({ message: err.message });

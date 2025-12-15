@@ -77,9 +77,6 @@ export const createProposal = async (req, res) => {
       });
     }
 
-    // =========================
-    // VALIDATE EVENT OWNERSHIP
-    // =========================
     const [event] = await db
       .select()
       .from(events)
