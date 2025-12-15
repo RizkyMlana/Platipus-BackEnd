@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middlewares/authMiddleware.js';
 import { roleMiddleware } from '../middlewares/roleMiddleware.js';
-import { getIncomingProposals, getProposalDetail, getRecommendedEvents, updateProposalStatus} from '../controllers/sponsorController.js';
+import { getAllSponsors, getIncomingProposals, getProposalDetail, getRecommendedEvents, updateProposalStatus} from '../controllers/sponsorController.js';
 
 const router = Router();
 
@@ -122,5 +122,7 @@ router.put("/proposals/:proposalSponsorId/status", authMiddleware, roleMiddlewar
  *         description: Internal server error
  */
 router.get("/recommended-events", authMiddleware, roleMiddleware('SPONSOR'), getRecommendedEvents);
+
+router.get("/all", authMiddleware, roleMiddleware('EO'), getAllSponsors)
 
 export default router; 

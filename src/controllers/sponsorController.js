@@ -313,3 +313,36 @@ export const getRecommendedEvents = async (req, res) => {
         return res.status(500).json({ message: err.message });
     }
 };
+
+
+// controller: getAllSponsors
+export const getAllSponsors = async (req, res) => {
+  try {
+    // optional: jika mau filter hanya sponsor aktif/open
+    const sponsorsList = await db
+      .select({
+        sponsor_id: sponsorProfiles.id,
+        company_name: sponsorProfiles.company_name,
+        company_address: sponsorProfiles.company_address,
+        industry: sponsorProfiles.industry,
+        website: sponsorProfiles.website,
+        social_media: sponsorProfiles.social_media,
+        category_name: sponsorCategories.name,
+        type_name: sponsorTypes.name,
+        scope_name: sponsorScopes.name,
+        budget_min: sponsorProfiles.budget_min,
+        budget_max: sponsorProfiles.budget_max,
+        status: sponsorProfiles.status,
+      })
+      .from(sponsorProfiles)
+      .leftJoin(sponsorCategories, eq(sponsorCategories.id, sponsorProfiles.sponsor_category_id))
+      .leftJoin(sponsorTypes, eq(sponsorTypes.id, sponsorProfiles.sponsor_type_id))
+      .leftJoin(sponsorScopes, eq(sponsorScopes.id, sponsorProfiles.sponsor_scope_id))
+      .orderBy(asc(sponsorProfiles.company_name));
+
+    res.json({ sponsors: sponsorsList });
+  } catch (err) {
+    console.error("getAllSponsors error:", err);
+    res.status(500).json({ message: err.message });
+  }
+};
