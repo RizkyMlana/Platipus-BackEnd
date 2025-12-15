@@ -61,7 +61,7 @@ const router = Router();
  *       500:
  *         description: Internal server error
  */
-router.post('/', authMiddleware, roleMiddleware('EO'), createEvent, uploadEvent.single("image"));
+router.post('/', authMiddleware, uploadEvent.single("image"), roleMiddleware('EO'), createEvent);
 /**
  * @swagger
  * /events/{eventId}:
