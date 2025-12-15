@@ -424,14 +424,14 @@ export const getProposalsByEO = async (req, res) => {
     const eoId = req.user.id;
 
     // Ambil semua event milik EO
-    const eventsList = await db.select({
-      event_id: events.id,
-    })
-    .from(events)
-    .where(eq(events.eo_id, eoId));
+    const eventsList = await db.select({ event_id: events.id })
+      .from(events)
+      .where(eq(events.eo_id, eoId));
 
     const eventIds = eventsList.map(e => e.event_id);
+    console.log("EO event IDs:", eventIds);
 
+    // Jika tidak ada event, kembalikan array kosong
     if (!eventIds.length) {
       return res.json({ proposals: [] });
     }
