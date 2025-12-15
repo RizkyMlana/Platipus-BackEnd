@@ -1,6 +1,7 @@
 import { pgTable, uuid, varchar, timestamp, text} from "drizzle-orm/pg-core";
 import { events } from "./events.js";
 import { sponsorProfiles } from "./users.js";
+import { relation } from "drizzle-orm/relations";
 
 
 export const proposals = pgTable('proposals', {
@@ -20,4 +21,6 @@ export const proposalSponsors = pgTable('proposal_sponsors', {
   status: varchar('status', { length: 50 }).default('Pending'),
   feedback: text('feedback'),
   created_at: timestamp('created_at').defaultNow(),
-});
+}, (table) => ({
+  proposal: relation(table.proposal_id, proposals.id),
+}));
