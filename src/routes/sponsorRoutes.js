@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { authMiddleware } from '../middlewares/authMiddleware.js';
 import { roleMiddleware } from '../middlewares/roleMiddleware.js';
 import { getAllSponsors, getIncomingProposals, getProposalDetail, getRecommendedEvents, updateProposalStatus} from '../controllers/sponsorController.js';
+import { sponsorCategories, sponsorScopes, sponsorTypes } from '../db/schema/masterTable.js';
 
 const router = Router();
 
