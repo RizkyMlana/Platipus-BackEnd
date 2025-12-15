@@ -11,6 +11,7 @@ export const events = pgTable('events', {
   requirements: text('requirements'),
   description: text('description'),
   proposal_url: text('proposal_url'),  // PDF uploaded by EO
+  image_url: text('image_url'),
   fast_track: boolean('fast_track').default(false),  // if EO paid
   start_time: timestamp('start_time'),
   end_time: timestamp('end_time'),
