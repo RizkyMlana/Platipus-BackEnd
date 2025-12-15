@@ -619,8 +619,8 @@ export const getRegisteredSponsorsByEO = async (req, res) => {
       )
       .where(
         and(
-          eq(events.eo_id, userId),               // ✅ FIX UTAMA
-          ne(proposals.submission_type, "REGULAR")
+          eq(events.eo_id, userId),
+          ne(proposals.submission_type, "FAST_TRACK")
         )
       )
       .orderBy(desc(proposalSponsors.created_at));
