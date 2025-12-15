@@ -322,11 +322,10 @@ export const feedbackProposal = async (req, res) => {
     const { proposalSponsorId } = req.params;
     const { feedback } = req.body;
 
-    if (!feedback || !feedback.trim()) {
+    if (!feedback?.trim()) {
       return res.status(400).json({ message: "Feedback is required" });
     }
 
-    // ambil sponsor profile (BUKAN userId)
     const sponsorProfile = await db.query.sponsorProfiles.findFirst({
       where: eq(sponsorProfiles.user_id, userId),
     });
@@ -347,7 +346,6 @@ export const feedbackProposal = async (req, res) => {
       return res.status(404).json({ message: "Proposal not found" });
     }
 
-    // business rule
     if (ps.proposal.submission_type !== "FAST_TRACK") {
       return res.status(400).json({
         message: "Feedback only allowed for FAST_TRACK proposals",
@@ -356,12 +354,13 @@ export const feedbackProposal = async (req, res) => {
 
     const [updated] = await db
       .update(proposalSponsors)
-      .set({
-        feedback,
-        updated_at: new Date(),
-      })
+      .set({ feedback, updated_at: new Date() })
       .where(eq(proposalSponsors.id, proposalSponsorId))
       .returning();
+
+    if (!updated) {
+      return res.status(500).json({ message: "Failed to update feedback" });
+    }
 
     res.json({
       message: "Feedback submitted",
@@ -372,4 +371,3 @@ export const feedbackProposal = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
