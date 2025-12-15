@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createEvent, updateEvent, getAllEvent, deleteEvent, getDetailEvent, getMyEvents, getProposalsByEO } from '../controllers/eventController.js';
+import { createEvent, updateEvent, getAllEvent, deleteEvent, getDetailEvent, getMyEvents, getProposalsByEO, getFastTrackProposalByEO, getRegisteredSponsorsByEO } from '../controllers/eventController.js';
 import { authMiddleware } from '../middlewares/authMiddleware.js';
 import { roleMiddleware } from '../middlewares/roleMiddleware.js';
 import { uploadEvent } from '../middlewares/multer.js';
@@ -196,5 +196,8 @@ router.get('/:eventId', getDetailEvent);
 
 router.get('/proposals', authMiddleware, roleMiddleware("EO"), getProposalsByEO);
 
+router.get('/proposals/fasttrack', authMiddleware, roleMiddleware("EO"), getFastTrackProposalByEO);
+
+router.get('/proposals/registered', authMiddleware, roleMiddleware("EO"), getRegisteredSponsorsByEO);
 
 export default router;

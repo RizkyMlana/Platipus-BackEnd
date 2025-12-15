@@ -3,8 +3,9 @@ import { db } from '../db/index.js';
 import { validateEventTimes } from '../utils/dateValidator.js';
 import { eq, and, desc} from 'drizzle-orm';
 import { eventCategories, eventModes, eventSizes, eventSponsorTypes } from '../db/schema/masterTable.js';
-import { proposals } from '../db/schema/proposals.js';
+import { proposals, proposalSponsors } from '../db/schema/proposals.js';
 import { supa } from '../config/storage.js';
+import { eoProfiles, sponsorProfiles } from '../db/schema/users.js';
 
 
 /**
@@ -285,7 +286,7 @@ export const updateEvent = async (req, res) => {
       
       editEvent.image_url = data.publicUrl;
     }
-    
+
     editEvent.updated_at = new Date();
 
     const [updated] = await db
@@ -540,6 +541,90 @@ export const getProposalsByEO = async (req, res) => {
 
   } catch (err) {
     console.error("getProposalsByEO error:", err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+export const getFastTrackProposalByEO = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const eoProfile = await db.query.eoProfiles.findFirst({
+      where: eq(eoProfiles.user_id, userId),
+    });
+
+    if(!eoProfile) {
+      return res.status(403).json({ message: "Only EO can access this"});
+    }
+
+    const data = await db
+      .select({
+        proposal_id: proposals.id,
+        submission_type: proposals.submission_type,
+        pdf_url: proposals.pdf_url,
+        created_at: proposals.created_at,
+
+        proposal_sponsor_id: proposalSponsors.id,
+        status: proposalSponsors.status,
+        feedback: proposalSponsors.feedback,
+
+        sponsor_id: sponsorProfiles.id,
+        sponsor_name: sponsorProfiles.company_name,
+
+        event_id: events.id,
+        event_name: events.name,
+      })
+      .from(proposals)
+      .innerJoin(events, eq(events.id, proposals.event_id))
+      .innerJoin(proposalSponsors, eq(proposalSponsors.proposal_id, proposals.id))
+      .innerJoin(sponsorProfiles, eq(sponsorProfiles.id, proposalSponsors.sponsor_id))
+      .where(
+        and(
+          eq(events.eo_id, eoProfile.id),
+          eq(proposals.submission_type, "FAST_TRACK")
+        )
+      )
+      .orderBy(desc(proposals.created_at));
+    res.json({ proposals: data});
+  } catch(err) {
+    res.status(500).json({message: err.message});
+  }
+  
+};
+
+export const getRegisteredSponsorsByEO = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const eoProfile = await db.query.eoProfiles.findFirst({
+      where: eq(eoProfiles.user_id, userId),
+    });
+
+    if (!eoProfile) {
+      return res.status(403).json({ message: "Only EO can access this" });
+    }
+
+    const data = await db
+      .select({
+        sponsor_id: sponsorProfiles.id,
+        sponsor_name: sponsorProfiles.company_name,
+        sponsor_status: sponsorProfiles.status,
+
+        proposal_id: proposals.id,
+        submission_type: proposals.submission_type,
+
+        proposal_sponsor_id: proposalSponsors.id,
+        proposal_status: proposalSponsors.status,
+      })
+      .from(proposalSponsors)
+      .innerJoin(proposals, eq(proposals.id, proposalSponsors.proposal_id))
+      .innerJoin(events, eq(events.id, proposals.event_id))
+      .innerJoin(sponsorProfiles, eq(sponsorProfiles.id, proposalSponsors.sponsor_id))
+      .where(eq(events.eo_id, eoProfile.id))
+      .orderBy(desc(proposalSponsors.created_at));
+
+    res.json({ sponsors: data });
+  } catch (err) {
+    console.error("getRegisteredSponsorsByEO error:", err);
     res.status(500).json({ message: err.message });
   }
 };
