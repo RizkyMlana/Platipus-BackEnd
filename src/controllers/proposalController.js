@@ -240,8 +240,14 @@ export const sendProposalToSponsor = async (req, res) => {
 
 export const getFastTrackProposals = async (req, res) => {
   try {
-    const sponsorId = req.user.id;
+    const userId = req.user.id;
+    const sponsorProfile = await db.query.sponsorProfiles.findFirst({
+      where: eq(sponsorProfiles.user_id, userId),
+    });
 
+    if(!sponsorProfile) {
+      return res.status(403).json({ message: "Sponsor profile not found"});
+    }
     const result = await db.select({
         ps_id: proposalSponsors.id,
         status: proposalSponsors.status,
@@ -257,7 +263,7 @@ export const getFastTrackProposals = async (req, res) => {
       .where(
         and(
           eq(proposalSponsors.sponsor_id, sponsorId),
-          eq(proposals.submission_type, "fasttrack")
+          eq(proposals.submission_type, "FAST_TRACK")
         )
       );
 
