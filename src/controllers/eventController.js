@@ -4,6 +4,7 @@ import { validateEventTimes } from '../utils/dateValidator.js';
 import { eq, and, desc} from 'drizzle-orm';
 import { eventCategories, eventModes, eventSizes, eventSponsorTypes } from '../db/schema/masterTable.js';
 import { proposals } from '../db/schema/proposals.js';
+import { supa } from '../config/storage.js';
 
 
 /**
@@ -62,45 +63,101 @@ import { proposals } from '../db/schema/proposals.js';
  *         description: Internal server error
  */
 export const createEvent = async (req, res) => {
-    try{
-        if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
-        const {name, location, target, requirements, description, proposalUrl,
-             startTime, endTime, categoryId, sponsorTypeId, sizeId, modeId} = req.body;
-        
-        if(!name) return res.status(400).json({ message: "Event name required"});
-        if(!startTime || !endTime){
-            return res.status(400).json({ message: "Start & End Time required"})
-        }
-        const validation = validateEventTimes(startTime, endTime);
-        if (!validation.valid) return res.status(400).json({ message: validation.message });
-        const eoId  = req.user.id;
-        
-
-        const newEvent = {
-            eo_id: eoId,
-            name,
-            location: location || null,
-            target: target || null,
-            requirements: requirements || null,
-            description: description || null,
-            proposal_url: proposalUrl || null,
-            start_time: new Date(startTime),
-            end_time: new Date(endTime),
-            category_id: Number(categoryId),
-            sponsor_type_id: Number(sponsorTypeId),
-            size_id: Number(sizeId),
-            mode_id: Number(modeId),
-        };
-        const [created] = await db
-            .insert(events)
-            .values(newEvent)
-            .returning();
-        res.status(201).json({ event: created});
-    }catch (err){
-        res.status(500).json({message: err.message});
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
     }
-    
+
+    const {
+      name,
+      location,
+      target,
+      requirements,
+      description,
+      proposalUrl,
+      startTime,
+      endTime,
+      categoryId,
+      sponsorTypeId,
+      sizeId,
+      modeId,
+    } = req.body;
+
+    if (!name) {
+      return res.status(400).json({ message: "Event name required" });
+    }
+
+    if (!startTime || !endTime) {
+      return res.status(400).json({ message: "Start & End Time required" });
+    }
+
+    const validation = validateEventTimes(startTime, endTime);
+    if (!validation.valid) {
+      return res.status(400).json({ message: validation.message });
+    }
+
+    const eoId = req.user.id;
+
+    let imageUrl = null;
+
+    if (req.file) {
+      const ext = req.file.originalname.split(".").pop();
+      const filePath = `events/${eoId}-${Date.now()}.${ext}`;
+
+      const { error } = await supa.storage
+        .from("events")
+        .upload(filePath, req.file.buffer, {
+          contentType: req.file.mimetype,
+          upsert: false,
+        });
+
+      if (error) {
+        return res.status(500).json({ message: error.message });
+      }
+
+      const { data } = supa.storage
+        .from("events")
+        .getPublicUrl(filePath);
+
+      imageUrl = data.publicUrl;
+    }
+
+    // =============================
+    // INSERT EVENT
+    // =============================
+    const newEvent = {
+      eo_id: eoId,
+      name,
+      location: location || null,
+      target: target || null,
+      requirements: requirements || null,
+      description: description || null,
+      proposal_url: proposalUrl || null,
+      image_url: imageUrl,
+      start_time: new Date(startTime),
+      end_time: new Date(endTime),
+      category_id: Number(categoryId),
+      sponsor_type_id: Number(sponsorTypeId),
+      size_id: Number(sizeId),
+      mode_id: Number(modeId),
+    };
+
+    const [created] = await db
+      .insert(events)
+      .values(newEvent)
+      .returning();
+
+    return res.status(201).json({
+      message: "Event created",
+      event: created,
+    });
+
+  } catch (err) {
+    console.error("createEvent error:", err);
+    return res.status(500).json({ message: err.message });
+  }
 };
+
 
 /**
  * @swagger

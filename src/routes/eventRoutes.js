@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { createEvent, updateEvent, getAllEvent, deleteEvent, getDetailEvent, getMyEvents, getProposalsByEO } from '../controllers/eventController.js';
 import { authMiddleware } from '../middlewares/authMiddleware.js';
 import { roleMiddleware } from '../middlewares/roleMiddleware.js';
+import { uploadEvent } from '../middlewares/multer.js';
 
 const router = Router();
 
@@ -60,7 +61,7 @@ const router = Router();
  *       500:
  *         description: Internal server error
  */
-router.post('/', authMiddleware, createEvent, roleMiddleware('EO'));
+router.post('/', authMiddleware, createEvent, roleMiddleware('EO'), uploadEvent);
 /**
  * @swagger
  * /events/{eventId}:
