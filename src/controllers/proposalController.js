@@ -46,63 +46,100 @@ import { supa } from '../config/storage.js';
  */
 
 export const createProposal = async (req, res) => {
-    try {
-        const eoId = req.user.id;
-        const { eventId, submission_type } = req.body;
-
-        if (!eventId || !submission_type || !req.file) {
-            return res.status(400).json({ message: "Missing Fields" });
-        }
-        if (req.file.mimetype !== "application/pdf") {
-            return res.status(400).json({ message: "File must be pdf" });
-        }
-
-        const [event] = await db.select()
-            .from(events)
-            .where(eq(events.id, eventId));
-
-        if (!event || event.eo_id !== eoId) {
-            return res.status(403).json({ message: "Unauthorized" });
-        }
-
-        const fileName = `proposal-${eventId}-${Date.now()}.pdf`;
-        const storagePath = `proposal/${fileName}`;
-
-        const { data: uploadData, error: uploadError } = await supa.storage
-            .from("Platipus")
-            .upload(storagePath, req.file.buffer, {
-                contentType: "application/pdf",
-            });
-
-        if (uploadError) {
-            console.error("SUPABASE UPLOAD ERROR:", uploadError);
-            throw uploadError;
-        }
-
-        const { data: publicData } = supa.storage
-            .from("Platipus")
-            .getPublicUrl(storagePath);
-
-        const publicUrl = publicData.publicUrl;
-
-        const [created] = await db.insert(proposals)
-            .values({
-                event_id: eventId,
-                submission_type,
-                pdf_url: publicUrl,
-            })
-            .returning();
-
-        res.status(201).json({
-            message: "Proposal Uploaded",
-            proposal: created,
-        });
-
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: err.message });
+  try {
+    // =========================
+    // AUTH
+    // =========================
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
     }
+
+    const eoUserId = req.user.id;
+    const { eventId, submission_type } = req.body;
+
+    // =========================
+    // VALIDATION
+    // =========================
+    if (!eventId || !submission_type || !req.file) {
+      return res.status(400).json({ message: "Missing fields" });
+    }
+
+    if (req.file.mimetype !== "application/pdf") {
+      return res.status(400).json({ message: "File must be PDF" });
+    }
+
+    // normalize submission_type
+    const normalizedSubmissionType = submission_type.toUpperCase();
+
+    if (!["REGULAR", "FAST_TRACK"].includes(normalizedSubmissionType)) {
+      return res.status(400).json({
+        message: "submission_type must be REGULAR or FAST_TRACK",
+      });
+    }
+
+    // =========================
+    // VALIDATE EVENT OWNERSHIP
+    // =========================
+    const [event] = await db
+      .select()
+      .from(events)
+      .where(eq(events.id, eventId))
+      .limit(1);
+
+    if (!event || event.eo_id !== eoUserId) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    // =========================
+    // UPLOAD TO SUPABASE
+    // =========================
+    const fileName = `proposal-${eventId}-${Date.now()}.pdf`;
+    const storagePath = `proposals/${fileName}`;
+
+    const { error: uploadError } = await supa.storage
+      .from("Platipus")
+      .upload(storagePath, req.file.buffer, {
+        contentType: "application/pdf",
+        upsert: false,
+      });
+
+    if (uploadError) {
+      console.error("Supabase upload error:", uploadError);
+      return res.status(500).json({ message: uploadError.message });
+    }
+
+    const { data: publicData } = supa.storage
+      .from("Platipus")
+      .getPublicUrl(storagePath);
+
+    const publicUrl = publicData.publicUrl;
+
+    // =========================
+    // INSERT PROPOSAL
+    // =========================
+    const [created] = await db
+      .insert(proposals)
+      .values({
+        event_id: eventId,
+        submission_type: normalizedSubmissionType,
+        pdf_url: publicUrl,
+      })
+      .returning();
+
+    // =========================
+    // RESPONSE
+    // =========================
+    return res.status(201).json({
+      message: "Proposal uploaded successfully",
+      proposal: created,
+    });
+
+  } catch (err) {
+    console.error("createProposal error:", err);
+    return res.status(500).json({ message: err.message });
+  }
 };
+
 
 
 /**
