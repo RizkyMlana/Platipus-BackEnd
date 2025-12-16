@@ -120,17 +120,13 @@ export const getIncomingEventsForSponsor = async (req, res) => {
 export const getSponsorsByEO = async (req, res) => {
   try {
     const eoId = req.user.id;
-
-    // Ambil semua sponsor untuk EO ini (tanpa filter eventId)
     const data = await db
       .select({
         sponsor_id: sponsorProfiles.id,
         company_name: sponsorProfiles.company_name,
-        description: sponsorProfiles.description,
         submission_type: eventSponsors.submission_type,
         status: eventSponsors.status,
         feedback: eventSponsors.feedback,
-
       })
       .from(eventSponsors)
       .innerJoin(events, eq(events.id, eventSponsors.event_id))
@@ -141,16 +137,13 @@ export const getSponsorsByEO = async (req, res) => {
     const fastTrack = data.filter(d => d.submission_type === 'FAST_TRACK');
     const regular = data.filter(d => d.submission_type === 'REGULAR');
 
-    // Kirim JSON dengan urutan FAST_TRACK di atas, REGULAR di bawah
-    res.json({
-      fastTrack,
-      regular
-    });
+    res.json({ fastTrack, regular });
 
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Gagal mengambil data sponsor' });
   }
 };
+
 
 
