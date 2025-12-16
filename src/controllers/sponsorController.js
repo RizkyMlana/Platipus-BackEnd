@@ -87,7 +87,7 @@ export const getAllSponsors = async (req, res) => {
   }
 };
 
-export const reviewSubmission = async (req, res) => {
+export const reviewIncomingEvent = async (req, res) => {
   try {
     const sponsorUserId = req.user.id;
     const { submissionId } = req.params;
