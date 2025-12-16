@@ -86,9 +86,8 @@ export const submitEvent = async (req, res) => {
 
 export const getIncomingEventsForSponsor = async (req, res) => {
     try {
-        const userId = req.user.id;
         const sponsor = await db.query.sponsorProfiles.findFirst({
-            where: eq(sponsorProfiles.user_id, userId),
+            where: eq(sponsorProfiles.user_id, req.user.id),
         });
 
         if(!sponsor) {
@@ -97,21 +96,24 @@ export const getIncomingEventsForSponsor = async (req, res) => {
 
         const data = await db
             .select({
-                submission_id: eventSponsors.id,
-                submission_type: eventSponsors.submission_type,
+                eventSponsorId: eventSponsors.id,
+                eventId: events.id,
+                eventName: events.name,
+                submissionType: eventSponsors.submission_type,
                 status: eventSponsors.status,
-                event_id: events.id,
-                event_name: events.name,
-                proposal_url: events.proposal_url,
-                eo_id: events.eo_id,
+                createdAt: eventSponsors.created_at,
             })
             .from(eventSponsors)
             .innerJoin(events, eq(events.id, eventSponsors.event_id))
-            .where(eq(eventSponsors.sponsor_id, sponsor.id))
-            .orderBy(desc(eventSponsors.created_at));
+            .where(and(eq(eventSponsors.sponsor_id, sponsor.id), eq(eventSponsors.status, 'PENDING')));
 
         
-        res.json({ events: data})
+        const fastTrack = data.filter(d => d.submissionType === "FAST_TRACK");
+        const regular = data.filter(d => d.submissionType === "REGULAR");
+
+        res.json({
+            fastTrack, regular,
+        });
     } catch (err) {
         res.status(500).json({ message: err.message});
     }
