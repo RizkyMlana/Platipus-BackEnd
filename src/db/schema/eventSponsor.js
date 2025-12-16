@@ -1,6 +1,6 @@
 import {pgTable, uuid, text, varchar, timestamp,} from 'drizzle-orm/pg-core';
 
-export const eventSponsors = pgTable("event_sponsors", {
+export const eventSponsors = pgTable("eventSponsors", {
   id: uuid("id").defaultRandom().primaryKey(),
   event_id: uuid("event_id").references(() => events.id).notNull(),
   sponsor_id: uuid("sponsor_id").references(() => sponsorProfiles.id).notNull(),
