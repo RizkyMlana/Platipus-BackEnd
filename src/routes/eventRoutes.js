@@ -12,10 +12,11 @@ router.put('/:eventId', authMiddleware, uploadEventAssets, roleMiddleware('EO'),
 router.delete('/:eventId', authMiddleware, roleMiddleware('EO'), deleteEvent);
 router.get('/me', authMiddleware, roleMiddleware('EO'), getMyEvents);
 router.get('/', getAllEvent);
+router.get('/sponsors', authMiddleware, getSponsorsByEO);
+
 router.get('/:eventId', getDetailEvent);
 
 router.post('/:eventId/submit', authMiddleware, submitEvent);
-router.get('/sponsors', authMiddleware, getSponsorsByEO);
 
 
 export default router;
