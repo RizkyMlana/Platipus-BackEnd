@@ -238,7 +238,7 @@ export const updateEvent = async (req, res) => {
     const [existing] = await db
       .select()
       .from(events)
-      .where(and(eq(events.id, eventId), eq(events.eoId, eoId)));
+      .where(and(eq(events.id, eventId), eq(events.eo_id, eoId)));
 
     if (!existing) {
       return res.status(404).json({ 
@@ -323,7 +323,7 @@ export const updateEvent = async (req, res) => {
     const [updated] = await db
       .update(events)
       .set(editEvent)
-      .where(and(eq(events.id, eventId), eq(events.eoId, eoId)))
+      .where(and(eq(events.id, eventId), eq(events.eo_id, eoId)))
       .returning();
 
     res.json({ message: "Event Updated", event: updated });
