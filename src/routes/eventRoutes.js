@@ -83,7 +83,7 @@ router.get('/', getAllEvent);
  */
 router.get('/:eventId', getDetailEvent);
 
-router.get('/:id/submit', authMiddleware, submitEvent);
+router.post('/:eventId/submit', authMiddleware, submitEvent);
 router.get('/sponsors', authMiddleware, getSponsorsByEO);
 
 

@@ -10,34 +10,70 @@ export const submitEvent = async (req, res) => {
         const { eventId } = req.params;
         const { sponsorId, submissionType } = req.body;
 
+        // Validasi submissionType
+        const allowedTypes = ["REGULAR", "FAST_TRACK"];
+        if (!allowedTypes.includes(submissionType)) {
+            return res.status(400).json({ 
+                success: false,
+                message: "Invalid submission type",
+            });
+        }
+
+        // Ambil EO profile
         const eo = await db.query.eoProfiles.findFirst({
             where: eq(eoProfiles.user_id, userId),
         });
-
-        if(!eo) return res.status(403).json({ message: "Only EO Allowed"});
-
-        const [event] = await db
-            .select()
-            .from(events)
-            .where(and(eq(events.id, eventId), eq(events.eo_id, eo.id)));
-        
-        if(!event) {
-            return res.status(404).json({ message: "Event not found"});
+        if (!eo) {
+            return res.status(403).json({ 
+                success: false,
+                message: "Only EO allowed",
+            });
         }
-        const [created] = await db
-            .insert(eventSponsors)
+
+        // Ambil event
+        const event = await db.query.events.findFirst({
+            where: and(eq(events.id, eventId), eq(events.eo_id, eo.id)),
+        });
+        if (!event) {
+            return res.status(404).json({ 
+                success: false,
+                message: "Event not found",
+            });
+        }
+
+        // Cek duplikasi submission
+        const existing = await db.query.eventSponsors.findFirst({
+            where: and(eq(eventSponsors.event_id, eventId), eq(eventSponsors.sponsor_id, sponsorId)),
+        });
+        if (existing) {
+            return res.status(409).json({
+                success: false,
+                message: "Sponsor already submitted for this event",
+            });
+        }
+
+        // Insert submission
+        const created = await db.insert(eventSponsors)
             .values({
                 event_id: eventId,
                 sponsor_id: sponsorId,
                 submission_type: submissionType,
             })
             .returning();
+
         res.status(201).json({
+            success: true,
             message: "Event submitted to sponsor",
-            data: created,
+            data: created[0],
+            requiresPayment: submissionType === "FAST_TRACK"
         });
+
     } catch (err) {
-        res.status(500).json({ message: err.message});
+        console.error(err);
+        res.status(500).json({ 
+            success: false,
+            message: "Internal server error",
+        });
     }
 };
 
