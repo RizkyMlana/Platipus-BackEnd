@@ -74,52 +74,43 @@ export const getIncomingEventsForSponsor = async (req, res) => {
     }
 };
 
-export const getSubmittedSponsorsByEO = async (req, res) => {
-  const { eventId } = req.params;
-  const eoId = req.user.id;
 
-  const data = await db
-    .select({
-      event_sponsor_id: eventSponsors.id,
-      sponsor_id: sponsorProfiles.id,
-      company_name: sponsorProfiles.company_name,
-      submission_type: eventSponsors.submission_type,
-      status: eventSponsors.status,
-      feedback: eventSponsors.feedback,
-    })
-    .from(eventSponsors)
-    .innerJoin(events, eq(events.id, eventSponsors.event_id))
-    .innerJoin(sponsorProfiles, eq(sponsorProfiles.id, eventSponsors.sponsor_id))
-    .where(and(
-      eq(events.id, eventId),
-      eq(events.eo_id, eoId)
-    ));
+export const getSponsorsByEO = async (req, res) => {
+  try {
+    const eoId = req.user.id;
 
-  res.json({ sponsors: data });
+    // Ambil semua sponsor untuk EO ini (tanpa filter eventId)
+    const data = await db
+      .select({
+        sponsor_id: sponsorProfiles.id,
+        company_name: sponsorProfiles.company_name,
+        description: sponsorProfiles.description, // deskripsi perusahaan
+        submission_type: eventSponsors.submission_type,
+        status: eventSponsors.status,
+        feedback: eventSponsors.feedback,
+        type_sponsor: eventSponsors.type_sponsor, // Dana, Media Partner, Layanan
+        cakupan_sponsor: eventSponsors.cakupan_sponsor, // Nasional/Lokal
+        budget: eventSponsors.budget, // contoh: 2-5 juta
+      })
+      .from(eventSponsors)
+      .innerJoin(events, eq(events.id, eventSponsors.event_id))
+      .innerJoin(sponsorProfiles, eq(sponsorProfiles.id, eventSponsors.sponsor_id))
+      .where(eq(events.eo_id, eoId));
+
+    // Pisahkan FAST_TRACK dan REGULAR
+    const fastTrack = data.filter(d => d.submission_type === 'FAST_TRACK');
+    const regular = data.filter(d => d.submission_type === 'REGULAR');
+
+    // Kirim JSON dengan urutan FAST_TRACK di atas, REGULAR di bawah
+    res.json({
+      fastTrack,
+      regular
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Gagal mengambil data sponsor' });
+  }
 };
 
-export const getSubmittedSponsorsFastTrackByEO = async (req, res) => {
-  const { eventId } = req.params;
-  const eoId = req.user.id;
-
-  const data = await db
-    .select({
-      event_sponsor_id: eventSponsors.id,
-      sponsor_id: sponsorProfiles.id,
-      company_name: sponsorProfiles.company_name,
-      submission_type: eventSponsors.submission_type,
-      status: eventSponsors.status,
-      feedback: eventSponsors.feedback,
-    })
-    .from(eventSponsors)
-    .innerJoin(events, eq(events.id, eventSponsors.event_id))
-    .innerJoin(sponsorProfiles, eq(sponsorProfiles.id, eventSponsors.sponsor_id))
-    .where(and(
-      eq(events.id, eventId),
-      eq(events.eo_id, eoId),
-      eq(eventSponsors.submission_type, "FAST_TRACK")
-    ));
-
-  res.json({ sponsors: data });
-};
 

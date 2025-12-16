@@ -3,7 +3,7 @@ import { createEvent, updateEvent, getAllEvent, deleteEvent, getDetailEvent, get
 import { authMiddleware } from '../middlewares/authMiddleware.js';
 import { roleMiddleware } from '../middlewares/roleMiddleware.js';
 import { uploadEventAssets} from '../middlewares/multer.js';
-import {submitEvent, getIncomingEventsForSponsor, getSubmittedSponsorsByEO, getSubmittedSponsorsFastTrackByEO } from "../controllers/eventsponsorController.js";
+import {submitEvent, getIncomingEventsForSponsor, getSponsorsByEO } from "../controllers/eventsponsorController.js";
 
 const router = Router();
 
@@ -84,8 +84,7 @@ router.get('/', getAllEvent);
 router.get('/:eventId', getDetailEvent);
 
 router.get('/:id/submit', authMiddleware, submitEvent);
-router.get('/incoming', authMiddleware, getIncomingEventsForSponsor);
-// router.get('/')
+router.get('/sponsors', authMiddleware, getSponsorsByEO);
 
 
 export default router;
