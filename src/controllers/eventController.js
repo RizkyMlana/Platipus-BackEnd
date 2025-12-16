@@ -209,36 +209,35 @@ export const deleteEvent = async (req, res) => {
     const { eventId } = req.params;
     const eoId = req.user.id;
 
+    // 1. Ambil event
     const [event] = await db
       .select()
       .from(events)
       .where(and(eq(events.id, eventId), eq(events.eo_id, eoId)));
 
     if (!event) {
-      return res.status(404).json({
-        message: "Event not found or you are not the owner",
-      });
+      return res.status(404).json({ message: "Event not found or not yours" });
     }
 
-    const proposalList = await db
-      .select({ id: proposals.id })
-      .from(proposals)
-      .where(eq(proposals.event_id, eventId));
-
-    if (proposalList.length > 0) {
-      const proposalIds = proposalList.map(p => p.id);
-
-      // delete proposal_sponsors
-      await db
-        .delete(proposalSponsors)
-        .where(inArray(proposalSponsors.proposal_id, proposalIds));
-
-      // delete proposals
-      await db
-        .delete(proposals)
-        .where(eq(proposals.event_id, eventId));
+    // 2. Hapus file image di Supabase storage (jika ada)
+    if (event.image_url) {
+      const imagePath = event.image_url.split("/").slice(-1)[0]; // ambil nama file dari URL
+      const { error: imageError } = await supa.storage
+        .from("Platipus")
+        .remove([`events/${imagePath}`]);
+      if (imageError) console.warn("Failed to delete image:", imageError.message);
     }
 
+    // 3. Hapus file proposal di Supabase storage (jika ada)
+    if (event.proposal_url) {
+      const proposalPath = event.proposal_url.split("/").slice(-1)[0]; // ambil nama file dari URL
+      const { error: proposalError } = await supa.storage
+        .from("Platipus")
+        .remove([`proposal/${proposalPath}`]);
+      if (proposalError) console.warn("Failed to delete proposal:", proposalError.message);
+    }
+
+    // 4. Hapus event dari DB
     await db
       .delete(events)
       .where(eq(events.id, eventId));
