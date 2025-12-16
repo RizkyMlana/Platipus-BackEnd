@@ -8,7 +8,14 @@ export const submitEvent = async (req, res) => {
     try {
         const userId = req.user.id;
         const { eventId } = req.params;
-        const { sponsorId, submissionType } = req.body;
+        const { sponsorId, submissionType } = req.body || {};
+
+        if (!sponsorId || !submissionType) {
+            return res.status(400).json({
+                success: false,
+                message: "Missing sponsorId or submissionType in request body"
+            });
+        }
 
         // Validasi submissionType
         const allowedTypes = ["REGULAR", "FAST_TRACK"];
