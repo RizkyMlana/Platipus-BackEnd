@@ -130,10 +130,6 @@ export const getSponsorsByEO = async (req, res) => {
         submission_type: eventSponsors.submission_type,
         status: eventSponsors.status,
         feedback: eventSponsors.feedback,
-        type_sponsor: sponsorProfiles.sponsor_type_id, // Dana, Media Partner, Layanan
-        cakupan_sponsor: sponsorProfiles.sponsor_scope_id, // Nasional/Lokal
-        budget_min: sponsorProfiles.budget_min,
-        budget_max: sponsorProfiles.budget_max
 
       })
       .from(eventSponsors)
