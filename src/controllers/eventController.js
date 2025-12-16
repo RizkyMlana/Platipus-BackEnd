@@ -5,10 +5,12 @@ import { eq, and, desc} from 'drizzle-orm';
 import { eventCategories, eventModes, eventSizes, eventSponsorTypes } from '../db/schema/masterTable.js';
 import { supa } from '../config/storage.js';
 import { eventSponsors } from '../db/schema/eventSponsor.js';
+import { eoProfiles } from '../db/schema/users.js';
 
 
 export const createEvent = async (req, res) => {
   try {
+
     if (!req.user) return res.status(401).json({ message: "Unauthorized" });
 
     const {
@@ -22,7 +24,12 @@ export const createEvent = async (req, res) => {
     const validation = validateEventTimes(startTime, endTime);
     if (!validation.valid) return res.status(400).json({ message: validation.message });
 
-    const eoId = req.user.id;
+    const eo = await db.query.eoProfiles.findFirst({
+      where: eq(eoProfiles.user_id, req.user.id),
+    });
+    if(!eo) return res.status(403).json({ message: "Only EO allowed"});
+
+    const eoId = eo.id;
 
     // 1. Upload image
     let image_url = null;
@@ -88,7 +95,14 @@ export const createEvent = async (req, res) => {
 export const updateEvent = async (req, res) => {
   try {
     const { eventId } = req.params;
-    const eoId = req.user.id;
+
+    const eo = await db.query.eoProfiles.findFirst({
+      where: eq(eoProfiles.user_id, req.user_id),
+    });
+
+    if(!eo) return res.status(403).json({message: "Only EO allowed"});
+
+    const eoId = eo.id;
 
     // 1. Ambil event
     const [existing] = await db
