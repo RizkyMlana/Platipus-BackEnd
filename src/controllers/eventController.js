@@ -3,7 +3,6 @@ import { db } from '../db/index.js';
 import { validateEventTimes } from '../utils/dateValidator.js';
 import { eq, and, desc, ne} from 'drizzle-orm';
 import { eventCategories, eventModes, eventSizes, eventSponsorTypes } from '../db/schema/masterTable.js';
-import { proposals, proposalSponsors } from '../db/schema/proposals.js';
 import { supa } from '../config/storage.js';
 import { eoProfiles, sponsorProfiles } from '../db/schema/users.js';
 
@@ -75,7 +74,6 @@ export const createEvent = async (req, res) => {
       target,
       requirements,
       description,
-      proposalUrl,
       startTime,
       endTime,
       categoryId,
@@ -100,21 +98,20 @@ export const createEvent = async (req, res) => {
     const eoId = req.user.id;
 
     let imageUrl = null;
+    let proposalUrl = null;
 
-    if (req.file) {
+    if (req.file?.image?.[0]) {
+      const image = req.files.image[0];
       const ext = req.file.originalname.split(".").pop();
       const filePath = `events/${eoId}-${Date.now()}.${ext}`;
 
       const { error } = await supa.storage
         .from("Platipus")
-        .upload(filePath, req.file.buffer, {
-          contentType: req.file.mimetype,
-          upsert: false,
+        .upload(filePath, image.buffer, {
+          contentType: image.mimetype,
         });
 
-      if (error) {
-        return res.status(500).json({ message: error.message });
-      }
+      if (error) throw error;
 
       const { data } = supa.storage
         .from("Platipus")
@@ -123,9 +120,23 @@ export const createEvent = async (req, res) => {
       imageUrl = data.publicUrl;
     }
 
-    // =============================
-    // INSERT EVENT
-    // =============================
+    if (req.files?.proposal?.[0]) {
+      const pdf = req.files.proposal[0];
+      const filePath = `proposal/${eoId}-${Date.now()}.pdf`;
+
+      const { error } = await supa.storage
+        .from("Platipus")
+        .upload(filePath, pdf.buffer, {
+          contentType: "application/pdf",
+        });
+      if (error) throw error;
+
+      const { data } = supa.storage
+        .from("Platipus")
+        .getPublicUrl(filePath);
+      proposalUrl = data.publicUrl;
+    }
+
     const newEvent = {
       eo_id: eoId,
       name,
@@ -220,7 +231,7 @@ export const createEvent = async (req, res) => {
 
 export const updateEvent = async (req, res) => {
   try {
-    const { eventId: id } = req.params;
+    const { eventId } = req.params;
     const eoId = req.user.id;
 
     
@@ -228,7 +239,7 @@ export const updateEvent = async (req, res) => {
     const [existing] = await db
       .select()
       .from(events)
-      .where(and(eq(events.id, id), eq(events.eo_id, eoId)));
+      .where(and(eq(events.id, eventId), eq(events.eo_id, eoId)));
 
 
     if (!existing) {
@@ -238,7 +249,7 @@ export const updateEvent = async (req, res) => {
     }
 
     const {
-      name, location, target, requirements, description, proposalUrl,
+      name, location, target, requirements, description, imageUrl, proposalUrl,
       startTime, endTime, categoryId, sponsorTypeId, sizeId, modeId
     } = req.body;
 
@@ -249,6 +260,7 @@ export const updateEvent = async (req, res) => {
     if (target !== undefined) editEvent.target = target || null;
     if (requirements !== undefined) editEvent.requirements = requirements || null;
     if (description !== undefined) editEvent.description = description || null;
+    if (imageUrl !== undefined) editEvent.image_url = imageUrl || null;
     if (proposalUrl !== undefined) editEvent.proposal_url = proposalUrl || null;
 
     if (startTime !== undefined || endTime !== undefined) {
@@ -270,21 +282,42 @@ export const updateEvent = async (req, res) => {
     if (modeId !== undefined) editEvent.mode_id = Number(modeId);
 
 
-    if (req.file){
-      const ext = req.file.originalname.split(".").pop();
-      const filePath = `events/${eoId}-${Date.now()}.${ext}`;
+    if (req.files?.image?.[0]){
+      const image = req.files.image[0];
+      const ext = image.originalname.split(".").pop();
+      const imagePath = `events/${eoId}-${Date.now()}.${ext}`;
 
-      const { error } = await supa.storage
+      const {error} = await supa.storage
         .from("Platipus")
-        .upload(filePath, req.file.buffer, {
-          contentType: req.file.mimetype,
+        .upload(imagePath, image.buffer, {
+          contentType: image.mimetype,
         });
       if (error) throw error;
+
       const { data } = supa.storage
         .from("Platipus")
-        .getPublicUrl(filePath)
+        .getPublicUrl(imagePath);
       
       editEvent.image_url = data.publicUrl;
+    }
+
+    if (req.files?.proposal?.[0]) {
+      const proposal = req.files.proposal[0];
+      const proposalPath = `proposal/${eventId}-${Date.now()}.pdf`;
+
+      const {error} = await supa.storage
+        .from("Platipus")
+        .upload(proposalPath, proposal.buffer, {
+          contentType: "application/pdf",
+        });
+      
+      if (error) throw error;
+
+      const { data } = supa.storage
+        .from("Platipus")
+        .getPublicUrl(proposalPath);
+      
+      editEvent.proposal_url = data.publicUrl;
     }
 
     editEvent.updated_at = new Date();
@@ -292,7 +325,7 @@ export const updateEvent = async (req, res) => {
     const [updated] = await db
       .update(events)
       .set(editEvent)
-      .where(and(eq(events.id, id), eq(events.eo_id, eoId)))
+      .where(and(eq(events.id, eventId), eq(events.eo_id, eoId)))
       .returning();
 
     res.json({ message: "Event Updated", event: updated });
@@ -328,26 +361,42 @@ export const updateEvent = async (req, res) => {
 
 export const deleteEvent = async (req, res) => {
   try {
-    const { eventId: id } = req.params;
+    const { eventId } = req.params;
     const eoId = req.user.id;
 
-    console.log("Delete Event - params id:", id, "eoId:", eoId);
-
-    const [existing] = await db
+    const [event] = await db
       .select()
       .from(events)
-      .where(and(eq(events.id, id), eq(events.eo_id, eoId)));
+      .where(and(eq(events.id, eventId), eq(events.eo_id, eoId)));
 
-    console.log("Existing event to delete:", existing);
-
-    if (!existing) {
-      return res.status(404).json({ 
-        message: 'Event Not Found. Either wrong id or you are not the owner.'
+    if (!event) {
+      return res.status(404).json({
+        message: "Event not found or you are not the owner",
       });
     }
 
-    await db.delete(events)
-      .where(and(eq(events.id, id), eq(events.eo_id, eoId)));
+    const proposalList = await db
+      .select({ id: proposals.id })
+      .from(proposals)
+      .where(eq(proposals.event_id, eventId));
+
+    if (proposalList.length > 0) {
+      const proposalIds = proposalList.map(p => p.id);
+
+      // delete proposal_sponsors
+      await db
+        .delete(proposalSponsors)
+        .where(inArray(proposalSponsors.proposal_id, proposalIds));
+
+      // delete proposals
+      await db
+        .delete(proposals)
+        .where(eq(proposals.event_id, eventId));
+    }
+
+    await db
+      .delete(events)
+      .where(eq(events.id, eventId));
 
     res.json({ message: "Event deleted successfully" });
 
@@ -356,7 +405,6 @@ export const deleteEvent = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
 
 /**
  * @swagger
@@ -494,141 +542,4 @@ export const getDetailEvent = async (req, res) => {
   }
 };
 
-export const getProposalsByEO = async (req, res) => {
-  try {
-    const eoId = req.user.id;
 
-    // Ambil semua event milik EO
-    const eventsList = await db.select({ event_id: events.id })
-      .from(events)
-      .where(eq(events.eo_id, eoId));
-
-    const eventIds = eventsList.map(e => e.event_id);
-    console.log("EO event IDs:", eventIds);
-
-    // Jika tidak ada event, kembalikan array kosong
-    if (!eventIds.length) {
-      return res.json({ proposals: [] });
-    }
-
-    // Ambil proposal + join ke master tables
-    const proposalsList = await db
-      .select({
-        proposal_id: proposals.id,
-        pdf_url: proposals.pdf_url,
-        submission_type: proposals.submission_type,
-        created_at: proposals.created_at,
-        event_id: proposals.event_id,
-        event_name: events.name,
-        event_location: events.location,
-        event_target: events.target,
-        event_requirements: events.requirements,
-        event_description: events.description,
-        category_name: event_categories.name,
-        sponsor_type_name: event_sponsor_types.name,
-        size_name: event_sizes.name,
-        mode_name: event_modes.name,
-      })
-      .from(proposals)
-      .leftJoin(events, eq(events.id, proposals.event_id))
-      .leftJoin(event_categories, eq(event_categories.id, events.category_id))
-      .leftJoin(event_sponsor_types, eq(event_sponsor_types.id, events.sponsor_type_id))
-      .leftJoin(event_sizes, eq(event_sizes.id, events.size_id))
-      .leftJoin(event_modes, eq(event_modes.id, events.mode_id))
-      .where(proposals.event_id.in(eventIds))
-      .orderBy(desc(proposals.created_at));
-
-    res.json({ proposals: proposalsList });
-
-  } catch (err) {
-    console.error("getProposalsByEO error:", err);
-    res.status(500).json({ message: err.message });
-  }
-};
-
-export const getFastTrackProposalByEO = async (req, res) => {
-  try {
-    const eoUserId = req.user.id;
-
-    const data = await db
-      .select({
-        proposal_id: proposals.id,
-        pdf_url: proposals.pdf_url,
-        created_at: proposals.created_at,
-
-        proposal_sponsor_id: proposalSponsors.id,
-        sponsor_id: proposalSponsors.sponsor_id,
-        status: proposalSponsors.status,
-        feedback: proposalSponsors.feedback,
-
-        event_id: events.id,
-        event_name: events.name,
-
-        sponsor_company: sponsorProfiles.company_name,
-      })
-      .from(proposals)
-      .innerJoin(events, eq(events.id, proposals.event_id))
-      .innerJoin(proposalSponsors, eq(proposalSponsors.proposal_id, proposals.id))
-      .innerJoin(sponsorProfiles, eq(sponsorProfiles.id, proposalSponsors.sponsor_id))
-      .where(
-        and(
-          eq(events.eo_id, eoUserId),
-          eq(proposals.submission_type, "FAST_TRACK")
-        )
-      )
-      .orderBy(desc(proposals.created_at));
-
-    res.json({ proposals: data });
-
-  } catch (err) {
-    console.error("getFastTrackByEO error:", err);
-    res.status(500).json({ message: err.message });
-  }
-};
-
-
-export const getRegisteredSponsorsByEO = async (req, res) => {
-  try {
-    const userId = req.user.id;
-
-    const eoProfile = await db.query.eoProfiles.findFirst({
-      where: eq(eoProfiles.user_id, userId),
-    });
-
-    if (!eoProfile) {
-      return res.status(403).json({ message: "Only EO can access this" });
-    }
-
-    const data = await db
-      .select({
-        sponsor_id: sponsorProfiles.id,
-        sponsor_name: sponsorProfiles.company_name,
-        sponsor_status: sponsorProfiles.status,
-
-        proposal_id: proposals.id,
-        submission_type: proposals.submission_type,
-        pdf_url: proposals.pdf_url,
-        proposal_sponsor_id: proposalSponsors.id,
-        proposal_status: proposalSponsors.status,
-      })
-      .from(proposalSponsors)
-      .innerJoin(proposals, eq(proposals.id, proposalSponsors.proposal_id))
-      .innerJoin(events, eq(events.id, proposals.event_id))
-      .innerJoin(
-        sponsorProfiles,
-        eq(sponsorProfiles.id, proposalSponsors.sponsor_id)
-      )
-      .where(
-        and(
-          eq(events.eo_id, userId),
-          ne(proposals.submission_type, "FAST_TRACK")
-        )
-      )
-      .orderBy(desc(proposalSponsors.created_at));
-
-    res.json({ sponsors: data });
-  } catch (err) {
-    console.error("getRegisteredSponsorsByEO error:", err);
-    res.status(500).json({ message: err.message });
-  }
-};

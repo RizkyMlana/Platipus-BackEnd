@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import { createEvent, updateEvent, getAllEvent, deleteEvent, getDetailEvent, getMyEvents, getProposalsByEO, getFastTrackProposalByEO, getRegisteredSponsorsByEO } from '../controllers/eventController.js';
+import { createEvent, updateEvent, getAllEvent, deleteEvent, getDetailEvent, getMyEvents } from '../controllers/eventController.js';
 import { authMiddleware } from '../middlewares/authMiddleware.js';
 import { roleMiddleware } from '../middlewares/roleMiddleware.js';
-import { uploadEvent } from '../middlewares/multer.js';
+import { uploadEventAssets} from '../middlewares/multer.js';
 
 const router = Router();
 
@@ -61,7 +61,7 @@ const router = Router();
  *       500:
  *         description: Internal server error
  */
-router.post('/', authMiddleware, uploadEvent.single("image"), roleMiddleware('EO'), createEvent);
+router.post('/', authMiddleware, uploadEventAssets, roleMiddleware('EO'), createEvent);
 /**
  * @swagger
  * /events/{eventId}:
@@ -119,7 +119,7 @@ router.post('/', authMiddleware, uploadEvent.single("image"), roleMiddleware('EO
  *       500:
  *         description: Internal server error
  */
-router.put('/:eventId', authMiddleware, uploadEvent.single("image"),roleMiddleware('EO'), updateEvent);
+router.put('/:eventId', authMiddleware, uploadEventAssets, roleMiddleware('EO'), updateEvent);
 /**
  * @swagger
  * /events/{eventId}:
@@ -194,10 +194,5 @@ router.get('/', getAllEvent);
  */
 router.get('/:eventId', getDetailEvent);
 
-router.get('/proposals', authMiddleware, roleMiddleware("EO"), getProposalsByEO);
-
-router.get('/proposals/fasttrack', authMiddleware, roleMiddleware("EO"), getFastTrackProposalByEO);
-
-router.get('/proposals/registered', authMiddleware, roleMiddleware("EO"), getRegisteredSponsorsByEO);
 
 export default router;

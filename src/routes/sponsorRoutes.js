@@ -1,71 +1,12 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middlewares/authMiddleware.js';
 import { roleMiddleware } from '../middlewares/roleMiddleware.js';
-import { getAllSponsors, getIncomingProposals, getProposalDetail, getRecommendedEvents, updateProposalStatus} from '../controllers/sponsorController.js';
+import { getAllSponsors, updateProposalStatus} from '../controllers/sponsorController.js';
 
 const router = Router();
 
-/**
- * @swagger
- * /sponsor/proposals:
- *   get:
- *     summary: Get incoming proposals for sponsor
- *     description: Sponsor can fetch all incoming proposals with optional filters (status, submission_type, from, to). Requires authentication.
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: query
- *         name: status
- *         schema:
- *           type: string
- *       - in: query
- *         name: submission_type
- *         schema:
- *           type: string
- *       - in: query
- *         name: from
- *         schema:
- *           type: string
- *           format: date-time
- *       - in: query
- *         name: to
- *         schema:
- *           type: string
- *           format: date-time
- *     responses:
- *       200:
- *         description: List of proposals
- *       404:
- *         description: Sponsor profile not found
- *       500:
- *         description: Internal server error
- */
 
-router.get("/incoming", authMiddleware, roleMiddleware('SPONSOR'), getIncomingProposals);
-/**
- * @swagger
- * /sponsor/proposals/{proposalSponsorId}:
- *   get:
- *     summary: Get detailed proposal info
- *     description: Sponsor can fetch details of a proposal by proposalSponsorId. Requires authentication.
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: proposalSponsorId
- *         required: true
- *         schema:
- *           type: integer
- *     responses:
- *       200:
- *         description: Proposal detail
- *       404:
- *         description: Sponsor profile or proposal not found
- *       500:
- *         description: Internal server error
- */
 
-router.get("/incoming/:proposalSponsorId", authMiddleware, roleMiddleware('SPONSOR'), getProposalDetail);
 /**
  * @swagger
  * /sponsor/proposals/{proposalSponsorId}/status:
@@ -105,23 +46,6 @@ router.get("/incoming/:proposalSponsorId", authMiddleware, roleMiddleware('SPONS
  *         description: Internal server error
  */
 router.put("/proposals/:proposalSponsorId/status", authMiddleware, roleMiddleware('SPONSOR'), updateProposalStatus);
-/**
- * @swagger
- * /sponsor/recommended-events:
- *   get:
- *     summary: Get recommended events for sponsor
- *     description: Sponsor can fetch events recommended based on their profile. Requires authentication.
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: List of recommended events
- *       404:
- *         description: Sponsor profile not found
- *       500:
- *         description: Internal server error
- */
-router.get("/recommended-events", authMiddleware, roleMiddleware('SPONSOR'), getRecommendedEvents);
 
 router.get("/all", authMiddleware, roleMiddleware('EO'), getAllSponsors)
 

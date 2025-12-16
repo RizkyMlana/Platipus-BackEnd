@@ -15,6 +15,31 @@ export const uploadProposal = multer({
     },
 });
 
+export const uploadEventAssets = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (
+      file.fieldname === "image" &&
+      !file.mimetype.startsWith("image/")
+    ) {
+      return cb(new Error("Event image must be an image"));
+    }
+
+    if (
+      file.fieldname === "proposal" &&
+      file.mimetype !== "application/pdf"
+    ) {
+      return cb(new Error("Proposal must be PDF"));
+    }
+
+    cb(null, true);
+  },
+}).fields([
+  { name: "image", maxCount: 1 },
+  { name: "proposal", maxCount: 1 },
+]);
+
 export const uploadImage = multer({
     storage,
     limits: {
