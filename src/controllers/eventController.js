@@ -234,13 +234,11 @@ export const updateEvent = async (req, res) => {
     const { eventId } = req.params;
     const eoId = req.user.id;
 
-    
-
+    // 1. Ambil event
     const [existing] = await db
       .select()
       .from(events)
-      .where(and(eq(events.id, eventId), eq(events.eo_id, eoId)));
-
+      .where(and(eq(events.id, eventId), eq(events.eoId, eoId)));
 
     if (!existing) {
       return res.status(404).json({ 
@@ -248,6 +246,7 @@ export const updateEvent = async (req, res) => {
       });
     }
 
+    // 2. Ambil body
     const {
       name, location, target, requirements, description, imageUrl, proposalUrl,
       startTime, endTime, categoryId, sponsorTypeId, sizeId, modeId
@@ -255,77 +254,76 @@ export const updateEvent = async (req, res) => {
 
     const editEvent = {};
 
+    // 3. Set fields jika ada
     if (name !== undefined) editEvent.name = name;
     if (location !== undefined) editEvent.location = location || null;
-    if (target !== undefined) editEvent.target = target || null;
+    if (target !== undefined) editEvent.target = Number(target) || null;
     if (requirements !== undefined) editEvent.requirements = requirements || null;
     if (description !== undefined) editEvent.description = description || null;
-    if (imageUrl !== undefined) editEvent.image_url = imageUrl || null;
-    if (proposalUrl !== undefined) editEvent.proposal_url = proposalUrl || null;
 
+    // 4. Waktu event
     if (startTime !== undefined || endTime !== undefined) {
-      const newStart = startTime ? new Date(startTime) : existing.start_time;
-      const newEnd = endTime ? new Date(endTime) : existing.end_time;
+      const newStart = startTime ? new Date(startTime) : existing.startTime;
+      const newEnd = endTime ? new Date(endTime) : existing.endTime;
 
       const timeValidation = validateEventTimes(newStart, newEnd);
       if (!timeValidation.valid) {
         return res.status(400).json({ message: timeValidation.message });
       }
 
-      editEvent.start_time = newStart;
-      editEvent.end_time = newEnd;
+      editEvent.startTime = newStart;
+      editEvent.endTime = newEnd;
     }
 
-    if (categoryId !== undefined) editEvent.category_id = Number(categoryId);
-    if (sponsorTypeId !== undefined) editEvent.sponsor_type_id = Number(sponsorTypeId);
-    if (sizeId !== undefined) editEvent.size_id = Number(sizeId);
-    if (modeId !== undefined) editEvent.mode_id = Number(modeId);
+    // 5. Numeric fields
+    if (categoryId) editEvent.categoryId = Number(categoryId);
+    if (sponsorTypeId) editEvent.sponsorTypeId = Number(sponsorTypeId);
+    if (sizeId) editEvent.sizeId = Number(sizeId);
+    if (modeId) editEvent.modeId = Number(modeId);
 
-
-    if (req.files?.image?.[0]){
+    // 6. File upload image
+    if (req.files?.image?.[0]) {
       const image = req.files.image[0];
       const ext = image.originalname.split(".").pop();
       const imagePath = `events/${eoId}-${Date.now()}.${ext}`;
 
-      const {error} = await supa.storage
+      const { error: uploadError } = await supa.storage
         .from("Platipus")
-        .upload(imagePath, image.buffer, {
-          contentType: image.mimetype,
-        });
-      if (error) throw error;
+        .upload(imagePath, image.buffer, { contentType: image.mimetype });
 
-      const { data } = supa.storage
-        .from("Platipus")
-        .getPublicUrl(imagePath);
-      
-      editEvent.image_url = data.publicUrl;
+      if (uploadError) throw uploadError;
+
+      const { data } = supa.storage.from("Platipus").getPublicUrl(imagePath);
+      if (!data?.publicUrl) throw new Error("Failed to get public URL for image");
+
+      editEvent.imageUrl = data.publicUrl;
     }
 
+    // 7. File upload proposal
     if (req.files?.proposal?.[0]) {
       const proposal = req.files.proposal[0];
       const proposalPath = `proposal/${eventId}-${Date.now()}.pdf`;
 
-      const {error} = await supa.storage
+      const { error: uploadError } = await supa.storage
         .from("Platipus")
-        .upload(proposalPath, proposal.buffer, {
-          contentType: "application/pdf",
-        });
-      
-      if (error) throw error;
+        .upload(proposalPath, proposal.buffer, { contentType: "application/pdf" });
 
-      const { data } = supa.storage
-        .from("Platipus")
-        .getPublicUrl(proposalPath);
-      
-      editEvent.proposal_url = data.publicUrl;
+      if (uploadError) throw uploadError;
+
+      const { data } = supa.storage.from("Platipus").getPublicUrl(proposalPath);
+      if (!data?.publicUrl) throw new Error("Failed to get public URL for proposal");
+
+      editEvent.proposalUrl = data.publicUrl;
     }
 
-    editEvent.updated_at = new Date();
+    // 8. Update timestamp
+    editEvent.updatedAt = new Date();
 
+    // 9. Update event di DB
     const [updated] = await db
       .update(events)
       .set(editEvent)
-      .where(and(eq(events.id, eventId), eq(events.eo_id, eoId)))
+      .where(and(eq(events.id, eventId), eq(events.eoId, eoId)))
       .returning();
 
     res.json({ message: "Event Updated", event: updated });
