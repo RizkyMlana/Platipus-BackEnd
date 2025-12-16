@@ -7,136 +7,55 @@ import { supa } from '../config/storage.js';
 import { eventSponsors } from '../db/schema/eventSponsor.js';
 
 
-/**
- * @swagger
- * /events:
- *   post:
- *     summary: Create a new event
- *     description: EO can create an event. Requires authentication.
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - name
- *               - startTime
- *               - endTime
- *             properties:
- *               name:
- *                 type: string
- *               location:
- *                 type: string
- *               target:
- *                 type: string
- *               requirements:
- *                 type: string
- *               description:
- *                 type: string
- *               proposalUrl:
- *                 type: string
- *               startTime:
- *                 type: string
- *                 format: date-time
- *               endTime:
- *                 type: string
- *                 format: date-time
- *               categoryId:
- *                 type: integer
- *               sponsorTypeId:
- *                 type: integer
- *               sizeId:
- *                 type: integer
- *               modeId:
- *                 type: integer
- *     responses:
- *       201:
- *         description: Event successfully created
- *       400:
- *         description: Validation error
- *       401:
- *         description: Unauthorized
- *       500:
- *         description: Internal server error
- */
 export const createEvent = async (req, res) => {
   try {
-    if (!req.user) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
+    if (!req.user) return res.status(401).json({ message: "Unauthorized" });
 
     const {
-      name,
-      location,
-      target,
-      requirements,
-      description,
-      startTime,
-      endTime,
-      categoryId,
-      sponsorTypeId,
-      sizeId,
-      modeId,
+      name, location, target, requirements, description,
+      startTime, endTime, categoryId, sponsorTypeId, sizeId, modeId
     } = req.body;
 
-    if (!name) {
-      return res.status(400).json({ message: "Event name required" });
-    }
-
-    if (!startTime || !endTime) {
-      return res.status(400).json({ message: "Start & End Time required" });
-    }
+    if (!name) return res.status(400).json({ message: "Event name required" });
+    if (!startTime || !endTime) return res.status(400).json({ message: "Start & End Time required" });
 
     const validation = validateEventTimes(startTime, endTime);
-    if (!validation.valid) {
-      return res.status(400).json({ message: validation.message });
-    }
+    if (!validation.valid) return res.status(400).json({ message: validation.message });
 
     const eoId = req.user.id;
 
-    let imageUrl = null;
-    let proposalUrl = null;
-
-    if (req.file?.image?.[0]) {
+    // 1. Upload image
+    let image_url = null;
+    if (req.files?.image?.[0]) {
       const image = req.files.image[0];
-      const ext = req.file.originalname.split(".").pop();
+      const ext = image.originalname.split(".").pop();
       const filePath = `events/${eoId}-${Date.now()}.${ext}`;
 
       const { error } = await supa.storage
         .from("Platipus")
-        .upload(filePath, image.buffer, {
-          contentType: image.mimetype,
-        });
-
+        .upload(filePath, image.buffer, { contentType: image.mimetype });
       if (error) throw error;
 
-      const { data } = supa.storage
-        .from("Platipus")
-        .getPublicUrl(filePath);
-
-      imageUrl = data.publicUrl;
+      const { data } = supa.storage.from("Platipus").getPublicUrl(filePath);
+      image_url = data?.publicUrl || null;
     }
 
+    // 2. Upload proposal
+    let proposal_url = null;
     if (req.files?.proposal?.[0]) {
-      const pdf = req.files.proposal[0];
+      const proposal = req.files.proposal[0];
       const filePath = `proposal/${eoId}-${Date.now()}.pdf`;
 
       const { error } = await supa.storage
         .from("Platipus")
-        .upload(filePath, pdf.buffer, {
-          contentType: "application/pdf",
-        });
+        .upload(filePath, proposal.buffer, { contentType: "application/pdf" });
       if (error) throw error;
 
-      const { data } = supa.storage
-        .from("Platipus")
-        .getPublicUrl(filePath);
-      proposalUrl = data.publicUrl;
+      const { data } = supa.storage.from("Platipus").getPublicUrl(filePath);
+      proposal_url = data?.publicUrl || null;
     }
 
+    // 3. Insert to DB
     const newEvent = {
       eo_id: eoId,
       name,
@@ -144,25 +63,20 @@ export const createEvent = async (req, res) => {
       target: target || null,
       requirements: requirements || null,
       description: description || null,
-      proposal_url: proposalUrl || null,
-      image_url: imageUrl,
+      image_url,
+      proposal_url,
       start_time: new Date(startTime),
       end_time: new Date(endTime),
-      category_id: Number(categoryId),
-      sponsor_type_id: Number(sponsorTypeId),
-      size_id: Number(sizeId),
-      mode_id: Number(modeId),
+      category_id: categoryId ? Number(categoryId) : null,
+      sponsor_type_id: sponsorTypeId ? Number(sponsorTypeId) : null,
+      size_id: sizeId ? Number(sizeId) : null,
+      mode_id: modeId ? Number(modeId) : null,
+      created_at: new Date(),
+      updated_at: new Date(),
     };
 
-    const [created] = await db
-      .insert(events)
-      .values(newEvent)
-      .returning();
-
-    return res.status(201).json({
-      message: "Event created",
-      event: created,
-    });
+    const [created] = await db.insert(events).values(newEvent).returning();
+    return res.status(201).json({ message: "Event created", event: created });
 
   } catch (err) {
     console.error("createEvent error:", err);
@@ -170,65 +84,7 @@ export const createEvent = async (req, res) => {
   }
 };
 
-
-/**
- * @swagger
- * /events/{eventId}:
- *   put:
- *     summary: Update an existing event
- *     description: EO can update their own event by ID.
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: eventId
- *         required: true
- *         schema:
- *           type: integer
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               name:
- *                 type: string
- *               location:
- *                 type: string
- *               target:
- *                 type: string
- *               requirements:
- *                 type: string
- *               description:
- *                 type: string
- *               proposalUrl:
- *                 type: string
- *               startTime:
- *                 type: string
- *                 format: date-time
- *               endTime:
- *                 type: string
- *                 format: date-time
- *               categoryId:
- *                 type: integer
- *               sponsorTypeId:
- *                 type: integer
- *               sizeId:
- *                 type: integer
- *               modeId:
- *                 type: integer
- *     responses:
- *       200:
- *         description: Event updated successfully
- *       400:
- *         description: Validation error
- *       404:
- *         description: Event not found
- *       500:
- *         description: Internal server error
- */
-
+// ========================== UPDATE EVENT ==========================
 export const updateEvent = async (req, res) => {
   try {
     const { eventId } = req.params;
@@ -240,86 +96,77 @@ export const updateEvent = async (req, res) => {
       .from(events)
       .where(and(eq(events.id, eventId), eq(events.eo_id, eoId)));
 
-    if (!existing) {
-      return res.status(404).json({ 
-        message: "Event Not Found. Either wrong id or you are not the owner." 
-      });
-    }
+    if (!existing) return res.status(404).json({ message: "Event not found or not yours" });
 
-    // 2. Ambil body
     const {
-      name, location, target, requirements, description, imageUrl, proposalUrl,
+      name, location, target, requirements, description,
       startTime, endTime, categoryId, sponsorTypeId, sizeId, modeId
     } = req.body;
 
     const editEvent = {};
 
-    // 3. Set fields jika ada
+    // 2. Optional fields
     if (name !== undefined) editEvent.name = name;
     if (location !== undefined) editEvent.location = location || null;
-    if (target !== undefined) editEvent.target = Number(target) || null;
+    if (target !== undefined) editEvent.target = target || null;
     if (requirements !== undefined) editEvent.requirements = requirements || null;
     if (description !== undefined) editEvent.description = description || null;
 
-    // 4. Waktu event
+    // 3. Time validation
     if (startTime !== undefined || endTime !== undefined) {
-      const newStart = startTime ? new Date(startTime) : existing.startTime;
-      const newEnd = endTime ? new Date(endTime) : existing.endTime;
+      const newStart = startTime ? new Date(startTime) : existing.start_time;
+      const newEnd = endTime ? new Date(endTime) : existing.end_time;
 
       const timeValidation = validateEventTimes(newStart, newEnd);
-      if (!timeValidation.valid) {
-        return res.status(400).json({ message: timeValidation.message });
-      }
+      if (!timeValidation.valid) return res.status(400).json({ message: timeValidation.message });
 
-      editEvent.startTime = newStart;
-      editEvent.endTime = newEnd;
+      editEvent.start_time = newStart;
+      editEvent.end_time = newEnd;
     }
 
-    // 5. Numeric fields
-    if (categoryId) editEvent.categoryId = Number(categoryId);
-    if (sponsorTypeId) editEvent.sponsorTypeId = Number(sponsorTypeId);
-    if (sizeId) editEvent.sizeId = Number(sizeId);
-    if (modeId) editEvent.modeId = Number(modeId);
+    // 4. Numeric fields
+    if (categoryId) editEvent.category_id = Number(categoryId);
+    if (sponsorTypeId) editEvent.sponsor_type_id = Number(sponsorTypeId);
+    if (sizeId) editEvent.size_id = Number(sizeId);
+    if (modeId) editEvent.mode_id = Number(modeId);
 
-    // 6. File upload image
+    // 5. Upload image
     if (req.files?.image?.[0]) {
       const image = req.files.image[0];
       const ext = image.originalname.split(".").pop();
       const imagePath = `events/${eoId}-${Date.now()}.${ext}`;
 
-      const { error: uploadError } = await supa.storage
+      const { error } = await supa.storage
         .from("Platipus")
         .upload(imagePath, image.buffer, { contentType: image.mimetype });
-
-      if (uploadError) throw uploadError;
+      if (error) throw error;
 
       const { data } = supa.storage.from("Platipus").getPublicUrl(imagePath);
-      if (!data?.publicUrl) throw new Error("Failed to get public URL for image");
+      if (!data?.publicUrl) throw new Error("Failed to get image URL");
 
-      editEvent.imageUrl = data.publicUrl;
+      editEvent.image_url = data.publicUrl;
     }
 
-    // 7. File upload proposal
+    // 6. Upload proposal
     if (req.files?.proposal?.[0]) {
       const proposal = req.files.proposal[0];
       const proposalPath = `proposal/${eventId}-${Date.now()}.pdf`;
 
-      const { error: uploadError } = await supa.storage
+      const { error } = await supa.storage
         .from("Platipus")
         .upload(proposalPath, proposal.buffer, { contentType: "application/pdf" });
-
-      if (uploadError) throw uploadError;
+      if (error) throw error;
 
       const { data } = supa.storage.from("Platipus").getPublicUrl(proposalPath);
-      if (!data?.publicUrl) throw new Error("Failed to get public URL for proposal");
+      if (!data?.publicUrl) throw new Error("Failed to get proposal URL");
 
-      editEvent.proposalUrl = data.publicUrl;
+      editEvent.proposal_url = data.publicUrl;
     }
 
-    // 8. Update timestamp
-    editEvent.updatedAt = new Date();
+    // 7. Update timestamp
+    editEvent.updated_at = new Date();
 
-    // 9. Update event di DB
+    // 8. Update DB
     const [updated] = await db
       .update(events)
       .set(editEvent)
