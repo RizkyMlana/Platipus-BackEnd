@@ -8,6 +8,6 @@ const router = Router();
 
 router.get("/all", authMiddleware, roleMiddleware('EO'), getAllSponsors)
 router.get("/events-incoming", authMiddleware, roleMiddleware("SPONSOR"), getIncomingEventsForSponsor);
-router.get("/events-incoming/:eventSponsorId/review", reviewIncomingEvent);
+router.post("/events-incoming/:eventSponsorId/review", reviewIncomingEvent);
 
 export default router; 
