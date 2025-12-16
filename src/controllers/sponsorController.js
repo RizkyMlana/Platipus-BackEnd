@@ -2,6 +2,7 @@ import { and, eq, gte, lte, desc, asc } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { sponsorProfiles } from "../db/schema/users.js";
 import { sponsorCategories, sponsorScopes, sponsorTypes } from "../db/schema/masterTable.js";
+import { eventSponsors } from "../db/schema/eventSponsor.js";
 
 
 
@@ -83,5 +84,67 @@ export const getAllSponsors = async (req, res) => {
   } catch (err) {
     console.error("getAllSponsors error:", err);
     res.status(500).json({ message: err.message });
+  }
+};
+
+export const reviewIncomingEvent = async (req, res) => {
+  try{
+    const { eventSponsorId } = req.params;
+    const { decision, feedback } = req.body;
+
+    if(!["ACCEPT", "REJECT"].includes(decision)) {
+      return res.status(400).json({ message: "Invalid Decision"});
+    }
+
+    const sponsor = await db.query.sponsorProfiles.findFirst({
+      where: eq(sponsorProfiles.user_id, req.user.id),
+    });
+
+    if(!sponsor) {
+      return res.status(403).json({ message: "Only Sponsor allowed"});
+    }
+
+    const submission = await db.query.eventSponsors.findFirst({
+      where: eq(eventSponsors.id, eventSponsorId),
+    });
+
+    if(!submission) {
+      return res.status(404).json({ message: "Submission not found"});
+    }
+    if( submission.sponsor_id !== sponsor.id) {
+      return res.status(403).json({ message: "Not your submission"});
+    }
+
+    if(submission.status !== 'PENDING') {
+      return res.status(400).json({ message: 'Submission already reviewed'});
+    }
+
+    if(submission.submission_type === 'FAST_TRACK') {
+      if(!feedback || feedback.trim() === '') {
+        return res.status(400).json({
+          message: "FAST_TRACK submission requires feedback",
+        });
+      } else {
+        if(feedback) {
+          return res.status(400).json({
+            message: "REGULAR submission cannot have feedback",
+          });
+        }
+      }
+    }
+      const [updated] = await db
+        .update(eventSponsors)
+        .set({
+          status: decision === "ACCEPT" ? "ACCEPTED" : "REJECTED",
+          feedback: submission.submission_type === "FAST_TRACK" ? feedback : null,
+        })
+        .where(eq(eventSponsors.id, eventSponsorId))
+        .returning();
+      res.json({
+        message: "Submission Reviewed",
+        data: updated,
+      });
+  } catch (err) {
+    res.status(500).json({ message: "Internal server error"});
   }
 };
