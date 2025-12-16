@@ -1,6 +1,6 @@
 import {pgTable, uuid, text, varchar, timestamp,} from 'drizzle-orm/pg-core';
-import { events } from './events';
-import { sponsorProfiles } from './users';
+import { events } from './events.js';
+import { sponsorProfiles } from './users.js';
 
 
 export const eventSponsors = pgTable("eventSponsors", {
