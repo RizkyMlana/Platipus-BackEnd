@@ -1,10 +1,10 @@
 import { events } from '../db/schema/events.js';
 import { db } from '../db/index.js';
 import { validateEventTimes } from '../utils/dateValidator.js';
-import { eq, and, desc, ne} from 'drizzle-orm';
+import { eq, and, desc} from 'drizzle-orm';
 import { eventCategories, eventModes, eventSizes, eventSponsorTypes } from '../db/schema/masterTable.js';
 import { supa } from '../config/storage.js';
-import { eoProfiles, sponsorProfiles } from '../db/schema/users.js';
+import { eventSponsors } from '../db/schema/eventSponsor.js';
 
 
 /**
@@ -464,20 +464,33 @@ export const getAllEvent = async (req, res) => {
  */
 export const getMyEvents = async (req, res) => {
     try {
-        const eoId = req.user.id;
-        
-        const myEvents = await db
-            .select()
-            .from(events)
-            .where(eq(events.eo_id, eoId));
-        
-        res.json({ 
-            message: 'Success',
-            data: myEvents,
-        });
-    }catch (err) {
-        console.error(err);
-        res.status(500).json({ message: err.message });
+      const eoId = req.user.id;
+      const rows = await db
+        .select({
+          event: events,
+          submission_type: eventSponsors.submission_type
+        })
+        .from(events)
+        .leftJoin(eventSponsors, eq(eventSponsors.event_id, events.id))
+        .where(eq(events.eo_id, eoId))
+
+      const fasttrack = rows
+        .filter(r => r.submission_type === "FAST_TRACK")
+        .map(r => r.event);
+
+      const reguler = rows
+        .filter(r => r.submission_type === "REGULAR")
+        .map(r => r.event);
+      
+      res.json({
+        message: 'Success',
+        data: {
+          fasttrack,
+          reguler
+        }
+      });
+    } catch (err) {
+      res.status(500).json({ message: err.message})
     }
 
 };
