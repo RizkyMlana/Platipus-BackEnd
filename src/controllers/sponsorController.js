@@ -87,64 +87,64 @@ export const getAllSponsors = async (req, res) => {
   }
 };
 
-export const reviewIncomingEvent = async (req, res) => {
-  try{
-    const { eventSponsorId } = req.params;
-    const { decision, feedback } = req.body;
+export const reviewSubmission = async (req, res) => {
+  try {
+    const sponsorUserId = req.user.id;
+    const { submissionId } = req.params;
+    const { status, feedback } = req.body;
 
-    if(!["ACCEPT", "REJECT"].includes(decision)) {
-      return res.status(400).json({ message: "Invalid Decision"});
+    const allowedStatus = ['ACCEPTED', 'REJECTED'];
+    if (!allowedStatus.includes(status)) {
+      return res.status(400).json({ message: 'Invalid status' });
     }
 
     const sponsor = await db.query.sponsorProfiles.findFirst({
-      where: eq(sponsorProfiles.user_id, req.user.id),
+      where: eq(sponsorProfiles.user_id, sponsorUserId),
     });
-
-    if(!sponsor) {
-      return res.status(403).json({ message: "Only Sponsor allowed"});
+    if (!sponsor) {
+      return res.status(403).json({ message: 'Only sponsor allowed' });
     }
 
     const submission = await db.query.eventSponsors.findFirst({
-      where: eq(eventSponsors.id, eventSponsorId),
+      where: and(
+        eq(eventSponsors.id, submissionId),
+        eq(eventSponsors.sponsor_id, sponsor.id)
+      ),
     });
 
-    if(!submission) {
-      return res.status(404).json({ message: "Submission not found"});
-    }
-    if( submission.sponsor_id !== sponsor.id) {
-      return res.status(403).json({ message: "Not your submission"});
+    if (!submission) {
+      return res.status(404).json({ message: 'Submission not found' });
     }
 
-    if(submission.status !== 'PENDING') {
-      return res.status(400).json({ message: 'Submission already reviewed'});
-    }
-
-    if(submission.submission_type === 'FAST_TRACK') {
-      if(!feedback || feedback.trim() === '') {
-        return res.status(400).json({
-          message: "FAST_TRACK submission requires feedback",
-        });
-      } else {
-        if(feedback) {
-          return res.status(400).json({
-            message: "REGULAR submission cannot have feedback",
-          });
-        }
-      }
-    }
-      const [updated] = await db
-        .update(eventSponsors)
-        .set({
-          status: decision === "ACCEPT" ? "ACCEPTED" : "REJECTED",
-          feedback: submission.submission_type === "FAST_TRACK" ? feedback : null,
-        })
-        .where(eq(eventSponsors.id, eventSponsorId))
-        .returning();
-      res.json({
-        message: "Submission Reviewed",
-        data: updated,
+    if (submission.submission_type === 'REGULAR' && feedback) {
+      return res.status(400).json({
+        message: 'Regular submission cannot have feedback',
       });
+    }
+
+    const updateData = {
+      status,
+      updated_at: new Date(),
+    };
+
+    if (submission.submission_type === 'FAST_TRACK') {
+      updateData.feedback = feedback || null;
+    }
+
+    const [updated] = await db
+      .update(eventSponsors)
+      .set(updateData)
+      .where(eq(eventSponsors.id, submissionId))
+      .returning();
+
+    res.json({
+      message: 'Submission reviewed',
+      data: updated,
+    });
+
   } catch (err) {
-    res.status(500).json({ message: "Internal server error"});
+    console.error('reviewSubmission error:', err);
+    res.status(500).json({ message: 'Internal server error' });
   }
 };
+
