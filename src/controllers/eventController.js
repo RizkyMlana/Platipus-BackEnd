@@ -466,39 +466,15 @@ export const getMyEvents = async (req, res) => {
   try {
     const eoId = req.user.id;
 
-    const rows = await db
-      .select({
-        event: events,
-        submissionType: eventSponsors.submission_type
-      })
+    // Ambil semua event EO ini
+    const myEvents = await db
+      .select()
       .from(events)
-      .leftJoin(
-        eventSponsors,
-        eq(eventSponsors.event_id, events.id)
-      )
       .where(eq(events.eo_id, eoId));
 
-    const fastTrack = [];
-    const regular = [];
-    const noSponsor = [];
-
-    for (const r of rows) {
-      if (!r.submissionType) {
-        noSponsor.push(r.event); // event tanpa sponsor
-      } else if (r.submissionType === 'FAST_TRACK') {
-        fastTrack.push(r.event);
-      } else if (r.submissionType === 'REGULAR') {
-        regular.push(r.event);
-      }
-    }
-
     res.json({
-      message: 'Success',
-      data: {
-        noSponsor,
-        fastTrack,
-        regular
-      }
+      message: "Success",
+      data: myEvents,
     });
 
   } catch (err) {
