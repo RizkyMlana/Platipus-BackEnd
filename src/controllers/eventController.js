@@ -4,7 +4,6 @@ import { validateEventTimes } from '../utils/dateValidator.js';
 import { eq, and, desc} from 'drizzle-orm';
 import { eventCategories, eventModes, eventSizes, eventSponsorTypes } from '../db/schema/masterTable.js';
 import { supa } from '../config/storage.js';
-import { eventSponsors } from '../db/schema/eventSponsor.js';
 import { eoProfiles } from '../db/schema/users.js';
 
 
@@ -91,7 +90,6 @@ export const createEvent = async (req, res) => {
   }
 };
 
-// ========================== UPDATE EVENT ==========================
 export const updateEvent = async (req, res) => {
   try {
     const { eventId } = req.params;
@@ -195,29 +193,6 @@ export const updateEvent = async (req, res) => {
   }
 };
 
-/**
- * @swagger
- * /events/{eventId}:
- *   delete:
- *     summary: Delete an event
- *     description: EO can delete their own event by ID.
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: eventId
- *         required: true
- *         schema:
- *           type: integer
- *     responses:
- *       200:
- *         description: Event deleted successfully
- *       404:
- *         description: Event not found or unauthorized
- *       500:
- *         description: Internal server error
- */
-
 export const deleteEvent = async (req, res) => {
   try {
     const { eventId } = req.params;
@@ -264,18 +239,6 @@ export const deleteEvent = async (req, res) => {
   }
 };
 
-/**
- * @swagger
- * /events:
- *   get:
- *     summary: Get all events
- *     description: Public endpoint to fetch all events with joined category, sponsor type, size, and mode.
- *     responses:
- *       200:
- *         description: List of events
- *       500:
- *         description: Internal server error
- */
 export const getAllEvent = async (req, res) => {
     try{
         const allEvents = await db
@@ -306,20 +269,6 @@ export const getAllEvent = async (req, res) => {
     }
 };
 
-/**
- * @swagger
- * /events/me:
- *   get:
- *     summary: Get events of the logged-in EO
- *     description: Fetch all events created by the authenticated EO.
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: List of events of the EO
- *       500:
- *         description: Internal server error
- */
 export const getMyEvents = async (req, res) => {
   try {
     const eoId = req.user.id;
@@ -341,27 +290,6 @@ export const getMyEvents = async (req, res) => {
   }
 };
 
-
-/**
- * @swagger
- * /events/{eventId}:
- *   get:
- *     summary: Get event details
- *     description: Fetch detailed info of an event by ID.
- *     parameters:
- *       - in: path
- *         name: eventId
- *         required: true
- *         schema:
- *           type: integer
- *     responses:
- *       200:
- *         description: Event details
- *       404:
- *         description: Event not found
- *       500:
- *         description: Internal server error
- */
 export const getDetailEvent = async (req, res) => {
   try {
     const { eventId: id } = req.params;

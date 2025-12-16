@@ -117,7 +117,6 @@ export const getIncomingEventsForSponsor = async (req, res) => {
     }
 };
 
-
 export const getSponsorsByEO = async (req, res) => {
   try {
     const eoId = req.user.id;
@@ -127,13 +126,15 @@ export const getSponsorsByEO = async (req, res) => {
       .select({
         sponsor_id: sponsorProfiles.id,
         company_name: sponsorProfiles.company_name,
-        description: sponsorProfiles.description, // deskripsi perusahaan
+        description: sponsorProfiles.description,
         submission_type: eventSponsors.submission_type,
         status: eventSponsors.status,
         feedback: eventSponsors.feedback,
-        type_sponsor: eventSponsors.type_sponsor, // Dana, Media Partner, Layanan
-        cakupan_sponsor: eventSponsors.cakupan_sponsor, // Nasional/Lokal
-        budget: eventSponsors.budget, // contoh: 2-5 juta
+        type_sponsor: sponsorProfiles.sponsor_type_id, // Dana, Media Partner, Layanan
+        cakupan_sponsor: sponsorProfiles.sponsor_scope_id, // Nasional/Lokal
+        budget_min: sponsorProfiles.budget_min,
+        budget_max: sponsorProfiles.budget_max
+
       })
       .from(eventSponsors)
       .innerJoin(events, eq(events.id, eventSponsors.event_id))
