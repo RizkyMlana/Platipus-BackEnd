@@ -463,37 +463,50 @@ export const getAllEvent = async (req, res) => {
  *         description: Internal server error
  */
 export const getMyEvents = async (req, res) => {
-    try {
-      const eoId = req.user.id;
-      const rows = await db
-        .select({
-          event: events,
-          submission_type: eventSponsors.submission_type
-        })
-        .from(events)
-        .leftJoin(eventSponsors, eq(eventSponsors.event_id, events.id))
-        .where(eq(events.eo_id, eoId))
+  try {
+    const eoId = req.user.id;
 
-      const fasttrack = rows
-        .filter(r => r.submission_type === "FAST_TRACK")
-        .map(r => r.event);
+    const rows = await db
+      .select({
+        event: events,
+        submissionType: eventSponsors.submission_type
+      })
+      .from(events)
+      .leftJoin(
+        eventSponsors,
+        eq(eventSponsors.event_id, events.id)
+      )
+      .where(eq(events.eo_id, eoId));
 
-      const reguler = rows
-        .filter(r => r.submission_type === "REGULAR")
-        .map(r => r.event);
-      
-      res.json({
-        message: 'Success',
-        data: {
-          fasttrack,
-          reguler
-        }
-      });
-    } catch (err) {
-      res.status(500).json({ message: err.message})
+    const fastTrack = [];
+    const regular = [];
+    const noSponsor = [];
+
+    for (const r of rows) {
+      if (!r.submissionType) {
+        noSponsor.push(r.event); // event tanpa sponsor
+      } else if (r.submissionType === 'FAST_TRACK') {
+        fastTrack.push(r.event);
+      } else if (r.submissionType === 'REGULAR') {
+        regular.push(r.event);
+      }
     }
 
+    res.json({
+      message: 'Success',
+      data: {
+        noSponsor,
+        fastTrack,
+        regular
+      }
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: err.message });
+  }
 };
+
 
 /**
  * @swagger
