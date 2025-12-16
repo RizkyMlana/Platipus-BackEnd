@@ -119,7 +119,14 @@ export const getIncomingEventsForSponsor = async (req, res) => {
 
 export const getSponsorsByEO = async (req, res) => {
   try {
-    const eoId = req.user.id;
+    const userId = req.user.id;
+
+    const eo = await db.query.eoProfiles.findFirst({
+        where: eq(eoProfiles.user_id, userId),
+    });
+    if(!eo) return res.status(403).json({ message: "Only EO allowed"});
+
+    const eoId = eo.id;
     const data = await db
       .select({
         sponsor_id: sponsorProfiles.id,
