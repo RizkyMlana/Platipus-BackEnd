@@ -89,6 +89,11 @@ export const getAllSponsors = async (req, res) => {
 
 export const reviewIncomingEvent = async (req, res) => {
   try {
+    // 🔴 GUARD WAJIB
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: "Unauthenticated" });
+    }
+
     const sponsorUserId = req.user.id;
     const { eventSponsorId } = req.params;
     const { decision, feedback } = req.body;
@@ -97,33 +102,35 @@ export const reviewIncomingEvent = async (req, res) => {
       return res.status(400).json({ message: "Invalid decision" });
     }
 
-    // Ambil sponsor profile
+    // 1️⃣ Ambil sponsor profile
     const sponsor = await db.query.sponsorProfiles.findFirst({
       where: eq(sponsorProfiles.user_id, sponsorUserId),
     });
+
     if (!sponsor) {
       return res.status(403).json({ message: "Only sponsor allowed" });
     }
 
-    // Ambil submission
+    // 2️⃣ Ambil submission
     const submission = await db.query.eventSponsors.findFirst({
       where: eq(eventSponsors.id, eventSponsorId),
     });
+
     if (!submission) {
       return res.status(404).json({ message: "Submission not found" });
     }
 
-    // Ownership check
+    // 3️⃣ Ownership check
     if (submission.sponsor_id !== sponsor.id) {
       return res.status(403).json({ message: "Not your submission" });
     }
 
-    // Status lifecycle
+    // 4️⃣ Status lifecycle
     if (submission.status !== "PENDING") {
       return res.status(400).json({ message: "Submission already reviewed" });
     }
 
-    // Business rules
+    // 5️⃣ Business rules
     if (submission.submission_type === "FAST_TRACK") {
       if (!feedback || feedback.trim() === "") {
         return res.status(400).json({
@@ -138,6 +145,7 @@ export const reviewIncomingEvent = async (req, res) => {
       });
     }
 
+    // 6️⃣ Update
     const [updated] = await db
       .update(eventSponsors)
       .set({
@@ -159,4 +167,5 @@ export const reviewIncomingEvent = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
 
