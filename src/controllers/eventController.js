@@ -271,7 +271,15 @@ export const getAllEvent = async (req, res) => {
 
 export const getMyEvents = async (req, res) => {
   try {
-    const eoId = req.user.id;
+
+    const eo = await db.query.eoProfiles.findFirst({
+      where: eq(eoProfiles.user_id, req.user.id),
+    });
+
+    if(!eo) {
+      return res.status(403).json({ message: "Only EO Allowed"});
+    }
+    const eoId = eo.id;
 
     // Ambil semua event EO ini
     const myEvents = await db
