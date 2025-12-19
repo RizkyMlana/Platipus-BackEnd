@@ -196,7 +196,13 @@ export const updateEvent = async (req, res) => {
 export const deleteEvent = async (req, res) => {
   try {
     const { eventId } = req.params;
-    const eoId = req.user.id;
+    const eo = await db.query.eoProfiles.findFirst({
+      where: eq(eoProfiles.user_id, req.user.id),
+    });
+
+    if(!eo) return res.status(403).json({message: "Only EO allowed"});
+
+    const eoId = eo.id;
 
     // 1. Ambil event
     const [event] = await db
