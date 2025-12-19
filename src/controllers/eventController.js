@@ -95,7 +95,7 @@ export const updateEvent = async (req, res) => {
     const { eventId } = req.params;
 
     const eo = await db.query.eoProfiles.findFirst({
-      where: eq(eoProfiles.user_id, req.user_id),
+      where: eq(eoProfiles.user_id, req.user.id),
     });
 
     if(!eo) return res.status(403).json({message: "Only EO allowed"});
