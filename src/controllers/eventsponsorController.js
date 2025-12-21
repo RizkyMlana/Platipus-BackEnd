@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { events } from '../db/schema/events.js';
-import { eoProfiles, sponsorProfiles } from '../db/schema/users.js';
+import { eoProfiles, sponsorProfiles, users } from '../db/schema/users.js';
 import { eventSponsors } from '../db/schema/eventSponsor.js';
 
 export const submitEvent = async (req, res) => {
@@ -133,6 +133,7 @@ export const getSponsorsByEO = async (req, res) => {
       .select({
         sponsor_id: sponsorProfiles.id,
         company_name: sponsorProfiles.company_name,
+        sponsor_picture: users.profile_picture_url,
         submission_type: eventSponsors.submission_type,
         status: eventSponsors.status,
         feedback: eventSponsors.feedback,
@@ -140,6 +141,7 @@ export const getSponsorsByEO = async (req, res) => {
       .from(eventSponsors)
       .innerJoin(events, eq(events.id, eventSponsors.event_id))
       .innerJoin(sponsorProfiles, eq(sponsorProfiles.id, eventSponsors.sponsor_id))
+      .innerJoin(users, eq(users.id, sponsorProfiles.user_id))
       .where(eq(events.eo_id, eoId));
 
     // Pisahkan FAST_TRACK dan REGULAR

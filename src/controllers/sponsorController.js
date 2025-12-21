@@ -3,6 +3,7 @@ import { db } from "../db/index.js";
 import { sponsorProfiles } from "../db/schema/users.js";
 import { sponsorCategories, sponsorScopes, sponsorTypes } from "../db/schema/masterTable.js";
 import { eventSponsors } from "../db/schema/eventSponsor.js";
+import { users } from "../db/schema/users.js";
 
 
 
@@ -73,11 +74,14 @@ export const getAllSponsors = async (req, res) => {
         budget_min: sponsorProfiles.budget_min,
         budget_max: sponsorProfiles.budget_max,
         status: sponsorProfiles.status,
+
+        sponsor_picture: users.profile_picture_url,
       })
       .from(sponsorProfiles)
       .leftJoin(sponsorCategories, eq(sponsorCategories.id, sponsorProfiles.sponsor_category_id))
       .leftJoin(sponsorTypes, eq(sponsorTypes.id, sponsorProfiles.sponsor_type_id))
       .leftJoin(sponsorScopes, eq(sponsorScopes.id, sponsorProfiles.sponsor_scope_id))
+      .leftJoin(users, eq(sponsorProfiles.user_id, users.id))
       .orderBy(asc(sponsorProfiles.company_name));
 
     res.json({ sponsors: sponsorsList });
