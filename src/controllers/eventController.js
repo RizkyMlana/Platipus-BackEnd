@@ -4,7 +4,7 @@ import { validateEventTimes } from '../utils/dateValidator.js';
 import { eq, and, desc} from 'drizzle-orm';
 import { eventCategories, eventModes, eventSizes, eventSponsorTypes } from '../db/schema/masterTable.js';
 import { supa } from '../config/storage.js';
-import { eoProfiles } from '../db/schema/users.js';
+import { eoProfiles, users } from '../db/schema/users.js';
 
 
 export const createEvent = async (req, res) => {
@@ -260,12 +260,17 @@ export const getAllEvent = async (req, res) => {
                 mode: eventModes.name,
                 proposal_url: events.proposal_url,
                 created_at: events.created_at,
+
+                eo_name: eoProfiles.organization_name,
+                eo_picture_url: users.profile_picture_url
             })
             .from(events)
             .leftJoin(eventCategories, eq(events.category_id, eventCategories.id))
             .leftJoin(eventSponsorTypes, eq(events.sponsor_type_id, eventSponsorTypes.id))
             .leftJoin(eventSizes, eq(events.size_id, eventSizes.id))
             .leftJoin(eventModes, eq(events.mode_id, eventModes.id))
+            .leftJoin(eoProfiles, eq(events.eo_id, eoProfiles.id))
+            .leftJoin(users, eq(eoProfiles.user_id, users.id))
             .orderBy(desc(events.created_at));
         res.json({ events: allEvents});
     }
