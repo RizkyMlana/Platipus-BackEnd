@@ -261,7 +261,6 @@ export const getAllEvent = async (req, res) => {
                 proposal_url: events.proposal_url,
                 created_at: events.created_at,
 
-                eo_name: eoProfiles.organization_name,
                 eo_picture_url: users.profile_picture_url
             })
             .from(events)
@@ -329,12 +328,17 @@ export const getDetailEvent = async (req, res) => {
         sponsorType: eventSponsorTypes.name,
         size: eventSizes.name,
         mode: eventModes.name,
+
+        eo_name: eoProfiles.organization_name,
+        eo_picture_url: users.profile_picture_url
       })
       .from(events)
       .leftJoin(eventCategories, eq(events.category_id, eventCategories.id))
       .leftJoin(eventSponsorTypes, eq(events.sponsor_type_id, eventSponsorTypes.id))
       .leftJoin(eventSizes, eq(events.size_id, eventSizes.id))
       .leftJoin(eventModes, eq(events.mode_id, eventModes.id))
+      .leftJoin(eoProfiles, eq(events.eo_id, eoProfiles.id))
+      .leftJoin(users, eq(eoProfiles.user_id, users.id))
       .where(eq(events.id, id));
 
     if (!event) {
