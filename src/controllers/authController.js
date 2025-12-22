@@ -129,13 +129,10 @@ export const loginUser = async (req, res) => {
   }
 };
 
-export const logoutUser = async (req, res) => {
-  try {
-    console.log("Header:", req.headers);
-    console.log("Body:", req.body);
-    res.json({ message: 'Logged Out'});
-  } catch(err) {
-    console.error(err);
-    res.status(500).json({message: 'Logout failed'});
+export const logoutUser = (req, res) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) {
+    console.warn("No token sent, but still logging out");
   }
-}
+  res.json({ message: "Logged out successfully" });
+};
